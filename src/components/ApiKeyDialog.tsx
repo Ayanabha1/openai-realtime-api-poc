@@ -30,11 +30,10 @@ export function ApiKeyDialog({ isOpen, onSubmit }: ApiKeyDialogProps) {
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Enter OpenAI API Key and Password</DialogTitle>
+          <DialogTitle>Enter Password</DialogTitle>
           <DialogDescription>
-            Please provide your OpenAI API key and password to use this
-            application. The key and password are required and cannot be
-            skipped.
+            Please provide your password to use this application. The key and
+            password are required and cannot be skipped.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
