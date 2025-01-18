@@ -32,8 +32,8 @@ export function ApiKeyDialog({ isOpen, onSubmit }: ApiKeyDialogProps) {
         <DialogHeader>
           <DialogTitle>Enter Password</DialogTitle>
           <DialogDescription>
-            Please provide your password to use this application. The key and
-            password are required and cannot be skipped.
+            Please provide your password to use this application. The password
+            is required and cannot be skipped.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
