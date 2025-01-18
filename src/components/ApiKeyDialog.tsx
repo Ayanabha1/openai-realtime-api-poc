@@ -13,20 +13,16 @@ import { Label } from "@/components/ui/label";
 
 interface ApiKeyDialogProps {
   isOpen: boolean;
-  onSubmit: (apiKey: string) => void;
+  onSubmit: () => void;
 }
 
 export function ApiKeyDialog({ isOpen, onSubmit }: ApiKeyDialogProps) {
-  const [apiKey, setApiKey] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      apiKey.trim() &&
-      password.trim() === process.env.NEXT_PUBLIC_ACCESS_PASSWORD
-    ) {
-      onSubmit(apiKey.trim());
+    if (password.trim() === process.env.NEXT_PUBLIC_ACCESS_PASSWORD) {
+      onSubmit();
     }
   };
 
@@ -43,19 +39,6 @@ export function ApiKeyDialog({ isOpen, onSubmit }: ApiKeyDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4 pt-0">
-            <div className="items-center gap-4">
-              <Label htmlFor="apiKey" className="text-right">
-                API Key
-              </Label>
-              <Input
-                id="apiKey"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-..."
-                className="mt-2"
-                required
-              />
-            </div>
             <div className="items-center gap-4">
               <Label htmlFor="password" className="text-right">
                 Password
@@ -74,10 +57,7 @@ export function ApiKeyDialog({ isOpen, onSubmit }: ApiKeyDialogProps) {
           <DialogFooter>
             <Button
               type="submit"
-              disabled={
-                !apiKey.trim() ||
-                password !== process.env.NEXT_PUBLIC_ACCESS_PASSWORD
-              }
+              disabled={password !== process.env.NEXT_PUBLIC_ACCESS_PASSWORD}
               className="w-full"
             >
               Submit

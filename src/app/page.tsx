@@ -11,7 +11,6 @@ export default function Home() {
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [chatbotReady, setChatbotReady] = useState(false);
-  const [apiKey, setApiKey] = useState("");
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(true);
 
   const [nextMessage, setNextMessage] = useState<{
@@ -23,12 +22,9 @@ export default function Home() {
   const fns: { [key: string]: any } = {
     getContext: async ({ query }: { query: string }) => {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(
-        `${apiUrl}/context?query=${query}&api_key=${apiKey}`,
-        {
-          method: "GET",
-        }
-      );
+      const response = await fetch(`${apiUrl}/context?query=${query}`, {
+        method: "GET",
+      });
       const data = await response.json();
       return data.context;
     },
@@ -67,7 +63,7 @@ export default function Home() {
 
   async function initChatbotConnection() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const tokenResponse = await fetch(`${apiUrl}/session?api_key=${apiKey}`);
+    const tokenResponse = await fetch(`${apiUrl}/session`);
     const data = await tokenResponse.json();
     const EPHEMERAL_KEY = data.client_secret.value;
 
@@ -192,8 +188,7 @@ export default function Home() {
     }
   };
 
-  const handleApiKeySubmit = (submittedApiKey: string) => {
-    setApiKey(submittedApiKey);
+  const handleApiKeySubmit = () => {
     setIsApiKeyDialogOpen(false);
   };
 

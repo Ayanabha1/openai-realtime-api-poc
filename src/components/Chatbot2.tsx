@@ -38,6 +38,7 @@ export default function Chatbot2({
   const [JSONContent, setJSONContent] = useState<any>([]);
   const [contextUploadLoading, setContextUploadLoading] = useState(false);
   const [participants, setParticipants] = useState<any>([]);
+  const [uploadedFile, setUploadedFile] = useState<any>();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
@@ -51,10 +52,28 @@ export default function Chatbot2({
 
         const data = JSON.parse(JSONData);
 
+        const filteredData = data.map((item: any) => {
+          const { speaker, message, timestamp } = item;
+          return { speaker, message, timestamp };
+        });
+
+        const isValidJSON = filteredData.every(
+          (item: any) =>
+            item.hasOwnProperty("speaker") &&
+            item.hasOwnProperty("message") &&
+            item.hasOwnProperty("timestamp")
+        );
+
+        if (!isValidJSON) {
+          alert(
+            "JSON file must only contain the keys: speaker, message, timestamp"
+          );
+          return;
+        }
+
         const uniqueParticipants = Array.from(
           new Set(data.map((item: any) => item.speaker))
         );
-        console.log(uniqueParticipants);
 
         if (uniqueParticipants.length > 0 && participants.length === 0) {
           setParticipants(uniqueParticipants.join(","));
@@ -62,6 +81,7 @@ export default function Chatbot2({
 
         setJSONContent(data);
         setJSONFile(file);
+        setUploadedFile(file);
       };
       fileReader.readAsText(file);
     } else {
@@ -103,9 +123,9 @@ export default function Chatbot2({
       setContextUploadLoading(true);
       try {
         const allParticipants = participants.split(",");
-
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         const response = await axios.post(
-          "http://localhost:8000/context",
+          `${apiUrl}/context`,
           {
             projectName,
             meetingName,
@@ -247,14 +267,13 @@ export default function Chatbot2({
                   onChange={(e) => setParticipants(e.target.value)}
                   placeholder="Enter comma-separated participants"
                   className="border border-gray-500 mt-2"
-                  required
                 />
               </div>
             </div>
             <Button
               className="w-full md:mt-[auto_!important] md:mb-[38px_!important]"
               type="submit"
-              disabled={contextUploadLoading}
+              disabled={contextUploadLoading || !JSONFile}
             >
               {contextUploadLoading ? "Uploading..." : "Upload Context"}
             </Button>
