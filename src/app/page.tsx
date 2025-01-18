@@ -9,27 +9,59 @@ export default function Home() {
   const [pc, setPc] = useState<RTCPeerConnection | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [sessionId, setSessionId] = useState("");
+  const [chatbotReady, setChatbotReady] = useState(false);
+
   const [nextMessage, setNextMessage] = useState<{
     sender: string;
     transcript: string;
   }>();
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
-  const fns = {
+  const fns: { [key: string]: any } = {
     getContext: async ({ query }: { query: string }) => {
-      const response = await fetch(
-        `http://localhost:8000/context?query=${query}`,
-        {
-          method: "GET",
-        }
-      );
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/context?query=${query}`, {
+        method: "GET",
+      });
       const data = await response.json();
       return data.context;
     },
   };
 
+  async function sendFunctionOutput(result: string, callId: any) {
+    if (dcRef.current) {
+      const event = {
+        type: "conversation.item.create",
+        item: {
+          type: "function_call_output",
+          call_id: callId,
+          output: result,
+        },
+      };
+      dcRef.current?.send(JSON.stringify(event));
+      dcRef.current?.send(JSON.stringify({ type: "response.create" }));
+    }
+  }
+
+  async function handleFunctionCall(
+    functionName: string,
+    args: any,
+    callId: any
+  ) {
+    const fn = fns[functionName];
+
+    if (fn !== undefined) {
+      console.log(`Calling local function ${functionName} with ${args}`);
+      const _args = JSON.parse(args);
+      const result = await fn(_args);
+      console.log("result", result);
+      sendFunctionOutput(result, callId);
+    }
+  }
+
   async function initChatbotConnection() {
-    const tokenResponse = await fetch("http://localhost:8000/session");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const tokenResponse = await fetch(`${apiUrl}/session`);
     const data = await tokenResponse.json();
     const EPHEMERAL_KEY = data.client_secret.value;
 
@@ -55,36 +87,15 @@ export default function Home() {
       switch (msg.type) {
         case "response.content_part.done":
           const { part } = msg;
-          console.log(part.transcript);
           setNextMessage({ sender: "AI", transcript: part.transcript });
           break;
 
         case "response.function_call_arguments.done":
           console.log("Calling a function");
-          const fn = fns[msg.name];
-          if (fn !== undefined) {
-            console.log(
-              `Calling local function ${msg.name} with ${msg.arguments}`
-            );
-            const args = JSON.parse(msg.arguments);
-            const result = await fn(args);
-            console.log("result", result);
-            // Let OpenAI know that the function has been called and share it's output
-            const event = {
-              type: "conversation.item.create",
-              item: {
-                type: "function_call_output",
-                call_id: msg.call_id, // call_id from the function_call message
-                output: JSON.stringify(result), // result of the function
-              },
-            };
-            dc.send(JSON.stringify(event));
-            dc.send(JSON.stringify({ type: "response.create" }));
-          }
+          handleFunctionCall(msg.name, msg.arguments, msg.call_id);
           break;
 
         case "conversation.item.input_audio_transcription.completed":
-          console.log("User Transcription:", msg);
           setNextMessage({ sender: "You", transcript: msg.transcript });
           break;
         default:
@@ -94,6 +105,7 @@ export default function Home() {
 
     dc.addEventListener("open", (e) => {
       console.log("Data channel is open", e);
+      setChatbotReady(true);
       const event = {
         type: "session.update",
         session: {
@@ -103,7 +115,7 @@ export default function Home() {
               type: "function",
               name: "getContext",
               description:
-                "The getContext tool retrieves related conversations stored in the Pinecone database based on a user query. It is designed to provide contextual information from past meetings. This tool can be used to fetch summaries, key points, participants, queries related to messages or meetings in general, ensuring the user has accurate and relevant insights to continue the conversation effectively.",
+                "The getContext tool retrieves related conversations stored in the Pinecone database based on a user query. It is designed to provide contextual information from past meetings. This tool can be used to fetch summaries, key points, participants, queries related to messages or meetings in general, ensuring the user has accurate and relevant insights to continue the conversation effectively. If summary or participants information is asked, then try to look for those specific keywords.",
               parameters: {
                 type: "object",
                 properties: {
@@ -118,6 +130,13 @@ export default function Home() {
           input_audio_transcription: {
             model: "whisper-1",
           },
+          turn_detection: {
+            type: "server_vad",
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 500,
+          },
+          tool_choice: "auto",
         },
       };
 
@@ -142,7 +161,7 @@ export default function Home() {
       type: "answer",
       sdp: await sdpResponse.text(),
     };
-    await pc.setRemoteDescription(answer);
+    await pc.setRemoteDescription(answer as any);
   }
 
   async function sendTextMessage(text: string) {
@@ -158,6 +177,7 @@ export default function Home() {
   }
 
   const closeConnection = () => {
+    setChatbotReady(false);
     if (pcRef.current) {
       pcRef.current.close();
     }
@@ -171,8 +191,9 @@ export default function Home() {
       <Chatbot2
         initChatbotConnection={initChatbotConnection}
         closeConnection={closeConnection}
-        nextMessage={nextMessage}
+        nextMessage={nextMessage!}
         sendTextMessage={sendTextMessage}
+        chatbotReady={chatbotReady}
       />
     </main>
   );
