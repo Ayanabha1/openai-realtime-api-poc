@@ -1,4 +1,5 @@
 "use client";
+import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import VoiceChatbot from "@/components/Chatbot";
 import Chatbot2 from "@/components/Chatbot2";
 import { Button, ButtonProps } from "@/components/ui/button";
@@ -10,6 +11,8 @@ export default function Home() {
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [chatbotReady, setChatbotReady] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(true);
 
   const [nextMessage, setNextMessage] = useState<{
     sender: string;
@@ -61,7 +64,7 @@ export default function Home() {
 
   async function initChatbotConnection() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const tokenResponse = await fetch(`${apiUrl}/session`);
+    const tokenResponse = await fetch(`${apiUrl}/session?api_key=${apiKey}`);
     const data = await tokenResponse.json();
     const EPHEMERAL_KEY = data.client_secret.value;
 
@@ -186,8 +189,14 @@ export default function Home() {
     }
   };
 
+  const handleApiKeySubmit = (submittedApiKey: string) => {
+    setApiKey(submittedApiKey);
+    setIsApiKeyDialogOpen(false);
+  };
+
   return (
     <main className="h-screen">
+      <ApiKeyDialog isOpen={isApiKeyDialogOpen} onSubmit={handleApiKeySubmit} />
       <Chatbot2
         initChatbotConnection={initChatbotConnection}
         closeConnection={closeConnection}
