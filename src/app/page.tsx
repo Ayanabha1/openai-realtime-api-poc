@@ -23,9 +23,12 @@ export default function Home() {
   const fns: { [key: string]: any } = {
     getContext: async ({ query }: { query: string }) => {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/context?query=${query}`, {
-        method: "GET",
-      });
+      const response = await fetch(
+        `${apiUrl}/context?query=${query}&api_key=${apiKey}`,
+        {
+          method: "GET",
+        }
+      );
       const data = await response.json();
       return data.context;
     },
