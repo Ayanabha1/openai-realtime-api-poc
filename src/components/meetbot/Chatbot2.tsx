@@ -7,6 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Mic, StopCircle, Send, Loader2 } from "lucide-react";
 import axios from "axios";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 
 export default function Chatbot2({
   initChatbotConnection,
@@ -14,7 +22,6 @@ export default function Chatbot2({
   nextMessage,
   sendTextMessage,
   chatbotReady,
-  locked,
 }: {
   initChatbotConnection: () => Promise<void>;
   closeConnection: () => void;
@@ -24,7 +31,6 @@ export default function Chatbot2({
   };
   sendTextMessage: (text: string) => Promise<void>;
   chatbotReady: boolean;
-  locked: boolean;
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPulsating, setIsPulsating] = useState(false);
@@ -120,7 +126,7 @@ export default function Chatbot2({
   };
 
   const uploadContext = async () => {
-    if (JSONFile && !locked) {
+    if (JSONFile) {
       setContextUploadLoading(true);
       try {
         const allParticipants = participants.split(",");
@@ -161,10 +167,6 @@ export default function Chatbot2({
   };
 
   const startRecording = async () => {
-    if (locked) {
-      alert("Plase put in your password first.");
-      return;
-    }
     console.log("Start Recording");
     initChatbotConnection();
     setIsRecording(true);
@@ -193,101 +195,121 @@ export default function Chatbot2({
   }, [nextMessage]);
 
   return (
-    <div className="dark bg-[#222] h-full">
+    <div className="h-full">
       <div className="md:h-full flex flex-col md:flex-row p-4 pb-8 text-white ">
-        <div className="flex-1 m-2 bg-muted border-2 h-full p-4 space-y-2 rounded-xl shadow-xl">
-          <div>
-            <h1 className="text-white text-xl">Context Upload</h1>
-          </div>
+        <div className="flex-1 m-2 border-2 h-full p-4 space-y-2 rounded-xl shadow-xl">
+          <Tabs defaultValue="context" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="context">Context Message</TabsTrigger>
+              <TabsTrigger value="transcript">Transcript</TabsTrigger>
+            </TabsList>
 
-          <form
-            className="space-y-4 flex flex-col h-full"
-            onSubmit={(e) => {
-              e.preventDefault();
-              uploadContext();
-            }}
-          >
-            <div className="">
-              <div className="mb-2">
-                <Label htmlFor="projectName">Project Name</Label>
-                <Input
-                  id="projectName"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="Enter project name"
-                  className="border border-gray-500 mt-2"
-                  required
-                />
-              </div>
-              <div className="mb-2">
-                <Label htmlFor="meetingName">Meeting Name</Label>
-                <Input
-                  id="meetingName"
-                  value={meetingName}
-                  onChange={(e) => setMeetingName(e.target.value)}
-                  placeholder="Enter meeting name"
-                  className="border border-gray-500 mt-2"
-                  required
-                />
-              </div>
-              <div className="mb-2">
-                <Label htmlFor="JSONFile">Upload JSON File</Label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer mt-2 ${
-                    isDragging
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300"
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">
-                    Drag and drop your JSON file here, or click to select
-                  </p>
-                  {JSONFile && (
-                    <p className="mt-2 text-sm text-green-500">
-                      File selected: {JSONFile.name}
-                    </p>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".JSON"
-                    onChange={(e) =>
-                      e.target.files && handleFileUpload(e.target.files[0])
-                    }
-                    className="hidden"
-                    required
-                  />
+            <TabsContent value="context" className="h-full">
+              <div className="h-full text-black p-4 px-2">
+                <h2 className="text-lg font-medium mb-1">
+                  Upload Context Message
+                </h2>
+                <p className="text-sm mb-4">
+                  Add context or background information for this meeting
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="context"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Context Message
+                    </label>
+                    <Textarea
+                      id="context"
+                      // value={contextMessage}
+                      // onChange={(e) => setContextMessage(e.target.value)}
+                      placeholder="Enter meeting context or background information"
+                      className="min-h-[200px]"
+                    />
+                  </div>
+
+                  <Button className="w-full" size="lg">
+                    Upload Context
+                  </Button>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="participants">Participants</Label>
-                <Input
-                  id="participants"
-                  value={participants}
-                  onChange={(e) => setParticipants(e.target.value)}
-                  placeholder="Enter comma-separated participants"
-                  className="border border-gray-500 mt-2"
-                />
+            </TabsContent>
+
+            <TabsContent value="transcript">
+              <div className="space-y-4 p-4 px-2 rounded-lg text-black">
+                <div>
+                  <h2 className="text-lg font-medium mb-1">
+                    Upload Meeting Transcript
+                  </h2>
+                  <p className="text-sm mb-4">
+                    Provide the transcript of this meeting
+                  </p>{" "}
+                </div>
+                <div>
+                  <form
+                    className="space-y-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      uploadContext();
+                    }}
+                  >
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="JSONFile">Upload JSON File</Label>
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer ${
+                            isDragging
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-300"
+                          }`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                          <p className="mt-2 text-sm text-gray-500">
+                            Drag and drop your JSON file here, or click to
+                            select
+                          </p>
+                          {JSONFile && (
+                            <p className="mt-2 text-sm text-green-500">
+                              File selected: {JSONFile.name}
+                            </p>
+                          )}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".JSON"
+                            onChange={(e) =>
+                              e.target.files &&
+                              handleFileUpload(e.target.files[0])
+                            }
+                            className="hidden"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      type="submit"
+                      disabled={contextUploadLoading || !JSONFile}
+                    >
+                      {contextUploadLoading ? "Uploading..." : "Upload Context"}
+                    </Button>
+                  </form>
+                </div>
               </div>
-            </div>
-            <Button
-              className="w-full md:mt-[auto_!important] md:mb-[38px_!important]"
-              type="submit"
-              disabled={contextUploadLoading || !JSONFile || locked}
-            >
-              {contextUploadLoading ? "Uploading..." : "Upload Context"}
-            </Button>
-          </form>
+            </TabsContent>
+          </Tabs>
         </div>
 
-        <div className="flex-1 m-2 bg-muted border-2 shadow-xl h-full p-4 rounded-xl ">
+        <div className="flex-1 m-2 border-2 shadow-xl h-full p-4 rounded-xl ">
           <div>
-            <h1 className="text-xl text-white">Chatbot</h1>
+            <h1 className="text-xl text-black">Chatbot</h1>
           </div>
           <div className=" flex flex-col gap-4 justify-between md:h-full h-72">
             <div
@@ -309,7 +331,6 @@ export default function Chatbot2({
               <Button
                 className="w-full"
                 onClick={isRecording ? stopRecording : startRecording}
-                disabled={locked}
               >
                 {isRecording && !chatbotReady ? (
                   <div className="flex items-center">

@@ -15,7 +15,7 @@ import { UserButton } from "@clerk/nextjs";
 
 export function Navbar() {
   return (
-    <nav className="shadow-sm border-b border-white/10">
+    <nav className="shadow-sm border-b border-white/10 bg-[#222]">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex-shrink-0 flex items-center">

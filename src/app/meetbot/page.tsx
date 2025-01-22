@@ -470,7 +470,6 @@ export default function MeetBotPage() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-1">
-                    <div className="mb-2"></div>
                     {userProjects.map((project) => (
                       <div
                         key={project.id}
@@ -524,6 +523,11 @@ export default function MeetBotPage() {
                         </DropdownMenu>
                       </div>
                     ))}
+                    {userProjects.length === 0 && (
+                      <div className="text-muted-foreground">
+                        No projects found.
+                      </div>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>

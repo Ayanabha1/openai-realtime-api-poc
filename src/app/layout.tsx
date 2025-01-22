@@ -21,8 +21,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <ClerkProvider>
-        <body className={cn("min-h-screen bg-[#222]", poppins.className)}>
+      <ClerkProvider
+        appearance={{
+          elements: {
+            footer: "hidden",
+          },
+        }}
+      >
+        <body className={cn("min-h-screen", poppins.className)}>
           {children}
         </body>
       </ClerkProvider>

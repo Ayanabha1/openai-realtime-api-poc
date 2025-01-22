@@ -62,10 +62,6 @@ export default function MeetingPage() {
   }
 
   async function initChatbotConnection() {
-    if (isLocked) {
-      alert("Please put in your password first.");
-      return;
-    }
     const apiUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL;
     const tokenResponse = await fetch(`${apiUrl}/session`);
     const data = await tokenResponse.json();
@@ -206,7 +202,6 @@ export default function MeetingPage() {
         nextMessage={nextMessage!}
         sendTextMessage={sendTextMessage}
         chatbotReady={chatbotReady}
-        locked={isLocked}
       />
     </main>
   );
