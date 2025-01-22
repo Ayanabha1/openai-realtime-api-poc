@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Mic, StopCircle, Send, Loader2 } from "lucide-react";
 import axios from "axios";
 
@@ -15,6 +14,7 @@ export default function Chatbot2({
   nextMessage,
   sendTextMessage,
   chatbotReady,
+  locked,
 }: {
   initChatbotConnection: () => Promise<void>;
   closeConnection: () => void;
@@ -24,6 +24,7 @@ export default function Chatbot2({
   };
   sendTextMessage: (text: string) => Promise<void>;
   chatbotReady: boolean;
+  locked: boolean;
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPulsating, setIsPulsating] = useState(false);
@@ -119,11 +120,11 @@ export default function Chatbot2({
   };
 
   const uploadContext = async () => {
-    if (JSONFile) {
+    if (JSONFile && !locked) {
       setContextUploadLoading(true);
       try {
         const allParticipants = participants.split(",");
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const apiUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL;
         const response = await axios.post(
           `${apiUrl}/context`,
           {
@@ -160,6 +161,10 @@ export default function Chatbot2({
   };
 
   const startRecording = async () => {
+    if (locked) {
+      alert("Plase put in your password first.");
+      return;
+    }
     console.log("Start Recording");
     initChatbotConnection();
     setIsRecording(true);
@@ -188,8 +193,8 @@ export default function Chatbot2({
   }, [nextMessage]);
 
   return (
-    <div className="dark min-h-screen bg-[#222]">
-      <div className="md:h-screen flex flex-col md:flex-row p-4 pb-8 text-white ">
+    <div className="dark bg-[#222] h-full">
+      <div className="md:h-full flex flex-col md:flex-row p-4 pb-8 text-white ">
         <div className="flex-1 m-2 bg-muted border-2 h-full p-4 space-y-2 rounded-xl shadow-xl">
           <div>
             <h1 className="text-white text-xl">Context Upload</h1>
@@ -273,7 +278,7 @@ export default function Chatbot2({
             <Button
               className="w-full md:mt-[auto_!important] md:mb-[38px_!important]"
               type="submit"
-              disabled={contextUploadLoading || !JSONFile}
+              disabled={contextUploadLoading || !JSONFile || locked}
             >
               {contextUploadLoading ? "Uploading..." : "Upload Context"}
             </Button>
@@ -304,6 +309,7 @@ export default function Chatbot2({
               <Button
                 className="w-full"
                 onClick={isRecording ? stopRecording : startRecording}
+                disabled={locked}
               >
                 {isRecording && !chatbotReady ? (
                   <div className="flex items-center">
