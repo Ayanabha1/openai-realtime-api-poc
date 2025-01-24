@@ -1,10 +1,10 @@
 // app/api/projects/route.ts
 import { PrismaClient } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { name, ownerId } = body;
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 }
 
 // Optional: GET method to fetch projects
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const ownerId = searchParams.get("ownerId");

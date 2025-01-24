@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // PATCH method to update a meeting
 export async function PATCH(req: Request, { params }: { params: any }) {
@@ -51,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: any }) {
   }
 }
 
-export async function GET(req: Request, { params }: { params: any }) {
+export async function GET(req: NextRequest, { params }: { params: any }) {
   try {
     const param = await params;
     const { meetingId } = param;
