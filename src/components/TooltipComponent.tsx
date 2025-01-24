@@ -4,10 +4,12 @@ const TooltipComponent = ({
   children,
   text,
   visible,
+  className,
 }: {
   children: React.ReactNode;
   text: string;
   visible: boolean;
+  className: string;
 }) => {
   const [show, setShow] = useState(false);
 
@@ -16,6 +18,7 @@ const TooltipComponent = ({
       <div
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
+        className={className}
       >
         {children}
       </div>

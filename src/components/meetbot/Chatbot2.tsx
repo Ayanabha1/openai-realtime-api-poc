@@ -432,6 +432,7 @@ export default function Chatbot2({
               <TooltipComponent
                 text="Please stop recording to toggle project-wide search mode"
                 visible={isRecording}
+                className="flex items-center space-x-2"
               >
                 <Switch
                   id="search-mode"
