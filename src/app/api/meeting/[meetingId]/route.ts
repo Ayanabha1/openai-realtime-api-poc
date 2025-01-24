@@ -2,14 +2,10 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 // PATCH method to update a meeting
-export async function PATCH(
-  req: Request,
-  { params }: { params: { meetingId: string } }
-) {
+export async function PATCH(req: Request, { params }: { params: any }) {
   try {
     const body = await req.json();
     const { meetingId } = params;
-
     if (!meetingId) {
       return NextResponse.json(
         { error: "meetingId is required" },
@@ -44,6 +40,34 @@ export async function PATCH(
     });
 
     console.log("Updated meeting:", meeting);
+
+    return NextResponse.json(meeting, { status: 200 });
+  } catch (error: any) {
+    console.error("Meeting update error:", error);
+    return NextResponse.json(
+      { error: "Failed to update meeting" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: Request, { params }: { params: any }) {
+  try {
+    const param = await params;
+    const { meetingId } = param;
+    if (!meetingId) {
+      return NextResponse.json(
+        { error: "meetingId is required" },
+        { status: 400 }
+      );
+    }
+
+    const meeting = await prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        project: true,
+      },
+    });
 
     return NextResponse.json(meeting, { status: 200 });
   } catch (error: any) {

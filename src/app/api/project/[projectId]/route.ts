@@ -2,10 +2,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 // Optional: UPDATE method to update a project
-export async function PATCH(
-  req: Request,
-  { params }: { params: { projectId: string } }
-) {
+export async function PATCH(req: Request, { params }: { params: any }) {
   try {
     const body = await req.json();
     const { projectId } = params;
@@ -52,10 +49,7 @@ export async function PATCH(
 }
 
 // Optional: DELETE method to delete a project
-export async function DELETE(
-  req: Request,
-  { params }: { params: { projectId: string } }
-) {
+export async function DELETE(req: Request, { params }: { params: any }) {
   try {
     const { projectId } = params;
 

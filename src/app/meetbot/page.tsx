@@ -596,7 +596,9 @@ export default function MeetBotPage() {
                     key={meeting.id}
                     className="cursor-pointer hover:bg-accent/50 transition-colors"
                     onClick={() => {
-                      router.push(`/meetbot/meeting`);
+                      router.push(
+                        `/meetbot/meeting/${userSelectedProject.id}/${meeting.id}`
+                      );
                     }}
                   >
                     <CardHeader>

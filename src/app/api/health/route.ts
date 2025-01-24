@@ -1,5 +1,8 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextResponse } from "next/server";
 
-export const GET = async (req: NextApiRequest, res: NextApiResponse) => {
-  res.status(200).json({ status: "ok" });
-};
+export async function GET(req: Request) {
+  return NextResponse.json({
+    status: 200,
+    message: "Backend in backending bro!",
+  });
+}
