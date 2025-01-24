@@ -64,7 +64,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   Select,
   SelectContent,
@@ -114,8 +114,8 @@ export default function MeetBotPage() {
   const [newName, setNewName] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const user = useUser();
+  const auth = useAuth();
   const pathName = usePathname();
-
   const router = useRouter();
 
   useEffect(() => {
@@ -368,6 +368,12 @@ export default function MeetBotPage() {
       getProjectMeetings(userSelectedProject?.id);
     }
   }, [userSelectedProject]);
+
+  useEffect(() => {
+    if (auth.isLoaded && !auth.isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [auth]);
 
   return (
     <div className="flex h-screen bg-background">

@@ -2,8 +2,9 @@
 import { ApiKeyDialog } from "@/components/meetbot/ApiKeyDialog";
 import Chatbot2 from "@/components/meetbot/Chatbot2";
 import { Navbar } from "@/components/meetbot/Navbar";
+import { useAuth } from "@clerk/nextjs";
 import { set } from "date-fns";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export default function MeetingPage() {
@@ -18,6 +19,7 @@ export default function MeetingPage() {
   const [isMounted, setIsMounted] = useState(false);
   const params = useParams<{ projectId: string; meetingId: string }>();
   const accumulatorRef = useRef("");
+  const router = useRouter();
 
   const [nextMessage, setNextMessage] = useState<{
     sender: string;
@@ -32,6 +34,7 @@ export default function MeetingPage() {
       return context;
     },
   };
+  const auth = useAuth();
 
   async function getContext(query: string) {
     const apiUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL;
@@ -246,6 +249,12 @@ export default function MeetingPage() {
     console.log(searchProject);
     setSearchProject(!searchProject);
   };
+
+  useEffect(() => {
+    if (auth.isLoaded && !auth.isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [auth]);
 
   useEffect(() => {
     setIsMounted(true);

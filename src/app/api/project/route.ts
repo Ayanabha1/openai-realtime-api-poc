@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Optional: GET method to fetch projects
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const ownerId = searchParams.get("ownerId");

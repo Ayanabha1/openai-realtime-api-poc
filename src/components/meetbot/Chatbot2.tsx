@@ -494,6 +494,7 @@ export default function Chatbot2({
               <Button
                 className="w-full"
                 onClick={isRecording ? stopRecording : startRecording}
+                disabled={!user.isSignedIn}
               >
                 {isRecording && !chatbotReady ? (
                   <div className="flex items-center">
