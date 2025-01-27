@@ -25,6 +25,8 @@ import {
   Trash,
   MoveRight,
   Loader2,
+  Folder,
+  StickyNote,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -73,42 +75,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader } from "@/components/loader";
+import Recorder from "@/components/notetaker/recorder";
 
-type Project = {
+type Topic = {
   id: string;
   name: string;
   isFavorite: boolean;
 };
 
-type Meeting = {
+type Note = {
   id: string;
   title: string;
   date: string;
-  time: string;
-  participants: string[];
-  projectId: string;
+  audio_url: string;
+  audio_duration: number;
+  topicId: string;
 };
 
 export default function MeetBotPage() {
   const [selectedProject, setSelectedProject] = useState<any>();
-  const [userSelectedProject, setUserSelectedProject] = useState<any>();
-  const [userProjects, setUserProjects] = useState<Project[]>([]);
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [newProjectName, setNewProjectName] = useState("");
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
-  const [projectToRename, setProjectToRename] = useState<Project | null>(null);
-  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
-  const [meetingToDelete, setMeetingToDelete] = useState<Meeting | null>(null);
-  const [meetingToRename, setMeetingToRename] = useState<Meeting | null>(null);
-  const [meetingToMove, setMeetingToMove] = useState<Meeting | null>(null);
-  const [newMeetingName, setNewMeetingName] = useState("");
-  const [newMeetingProjectId, setnewMeetingProjectIdId] = useState("");
-  const [isCreateMeetingDialogOpen, setIsCreateMeetingDialogOpen] =
-    useState(false);
-  const [newMeetingTitle, setNewMeetingTitle] = useState("");
-  const [newMeetingDate, setNewMeetingDate] = useState("");
-  const [newMeetingTime, setNewMeetingTime] = useState("");
-  const [newMeetingParticipants, setNewMeetingParticipants] = useState("");
+  const [userSelectedTopic, setuserSelectedTopic] = useState<any>();
+  const [topics, setUserTopics] = useState<Topic[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [uncategorizedNotes, setUncategorizedNotes] = useState<Note[]>([]);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  const [topicToRename, setTopicToRename] = useState<Topic | null>(null);
+  const [isAddTopicDialogOpen, setIsAddTopicDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  const [noteToRename, setNoteToRename] = useState<Note | null>(null);
+  const [noteToMove, setNoteToMove] = useState<Note | null>(null);
+  const [newNoteName, setNewNoteName] = useState("");
+  const [newNoteTopicId, setnewNoteTopicIdId] = useState("");
+  const [isCreateNoteDialogOpen, setIsCreateNoteDialogOpen] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteDate, setNewNoteDate] = useState("");
+  const [newNoteTime, setNewNoteTime] = useState("");
+  const [newNoteParticipants, setNewNoteParticipants] = useState("");
   const [pageLoading, setPageLoading] = useState(false);
   const [buttonLoading, setButtonLoading] = useState(false);
   const [newName, setNewName] = useState("");
@@ -121,45 +124,45 @@ export default function MeetBotPage() {
   useEffect(() => {
     const path = pathName.split("/")[1];
     setSelectedProject(
-      projects.find((p) => p.link === `/${path}`) || projects[0]
+      projects.find((p) => p.link === `/${path}`) || topics[0]
     );
   }, []);
 
-  const addProject = () => {
+  const addTopic = () => {
     if (!user.user?.id) {
       return;
     }
 
-    if (newProjectName.trim()) {
-      const newProject = {
-        name: newProjectName.trim(),
+    if (newTopicName.trim()) {
+      const newTopic = {
+        name: newTopicName.trim(),
         ownerId: user.user.id,
       };
       setButtonLoading(true);
 
-      fetch("/api/project", {
+      fetch("/api/topic", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newProject),
+        body: JSON.stringify(newTopic),
       })
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
-          setUserProjects([...userProjects, data]);
-          setNewProjectName("");
-          setIsAddProjectDialogOpen(false);
+          setUserTopics([...topics, data]);
+          setNewTopicName("");
+          setIsAddTopicDialogOpen(false);
         })
         .catch((err) => console.error(err))
         .finally(() => setButtonLoading(false));
     }
   };
 
-  const deleteProject = (id: string) => {
-    if (deleteConfirmation === projectToDelete?.name) {
+  const deleteTopic = (id: string) => {
+    if (deleteConfirmation === topicToDelete?.name) {
       setButtonLoading(true);
-      fetch(`/api/project/${id}`, {
+      fetch(`/api/topic/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -167,24 +170,22 @@ export default function MeetBotPage() {
       })
         .then((res) => {
           if (res.ok) {
-            setUserProjects(
-              userProjects.filter((project) => project.id !== id)
-            );
-            setProjectToDelete(null);
+            setUserTopics(topics.filter((topic) => topic.id !== id));
+            setTopicToDelete(null);
             setDeleteConfirmation("");
           } else {
-            console.error("Failed to delete project");
+            console.error("Failed to delete topic");
           }
         })
-        .catch((error) => console.error("Error deleting project:", error))
+        .catch((error) => console.error("Error deleting topic:", error))
         .finally(() => setButtonLoading(false));
     }
   };
 
-  const renameProject = () => {
-    if (projectToRename && newName.trim()) {
+  const renameTopic = () => {
+    if (topicToRename && newName.trim()) {
       setButtonLoading(true);
-      fetch(`/api/project/${projectToRename.id}`, {
+      fetch(`/api/topic/${topicToRename.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -195,12 +196,12 @@ export default function MeetBotPage() {
       })
         .then((res) => res.json())
         .then((data) => {
-          setUserProjects(
-            userProjects.map((project) =>
-              project.id === data.id ? { ...project, name: data.name } : project
+          setUserTopics(
+            topics.map((topic) =>
+              topic.id === data.id ? { ...topic, name: data.name } : topic
             )
           );
-          setProjectToRename(null);
+          setTopicToRename(null);
           setNewName("");
         })
         .catch((err) => console.error(err))
@@ -210,22 +211,22 @@ export default function MeetBotPage() {
 
   const toggleFavorite = (id: string) => {
     setPageLoading(true);
-    fetch(`/api/project/${id}`, {
+    fetch(`/api/topic/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        isFavorite: !userProjects.find((p) => p.id === id)?.isFavorite,
+        isFavorite: !topics.find((p) => p.id === id)?.isFavorite,
       }),
     })
       .then((res) => {
         if (res.ok) {
-          setUserProjects(
-            userProjects.map((project) =>
-              project.id === id
-                ? { ...project, isFavorite: !project.isFavorite }
-                : project
+          setUserTopics(
+            topics.map((topic) =>
+              topic.id === id
+                ? { ...topic, isFavorite: !topic.isFavorite }
+                : topic
             )
           );
         }
@@ -233,8 +234,8 @@ export default function MeetBotPage() {
       .finally(() => setPageLoading(false));
   };
 
-  const getUserProjects = async () => {
-    console.log("Getting projects");
+  const getTopics = async () => {
+    console.log("Getting topics");
     const userId = user.user?.id;
     if (!userId) {
       return;
@@ -242,117 +243,126 @@ export default function MeetBotPage() {
 
     setPageLoading(true);
     try {
-      const response = await fetch(`/api/project?ownerId=${userId}`);
+      const response = await fetch(`/api/topic?ownerId=${userId}`);
       const data = await response.json();
-      setUserProjects(data);
+      setUserTopics(data);
     } catch (error) {
-      console.error("Error fetching user projects:", error);
+      console.error("Error fetching user topics:", error);
     } finally {
       setPageLoading(false);
     }
   };
 
-  const getProjectMeetings = async (projectId: string) => {
+  const getUncategorizedNotes = async () => {
     setPageLoading(true);
     try {
-      const response = await fetch(`/api/meeting?projectId=${projectId}`);
+      const response = await fetch(`/api/note?ownerId=${user.user?.id}`);
       const data = await response.json();
-      setMeetings(data);
+      setUncategorizedNotes(data.notes);
     } catch (error) {
-      console.error("Error fetching project meetings:", error);
+      console.error("Error fetching uncategorized notes:", error);
     } finally {
       setPageLoading(false);
     }
   };
 
-  const deleteMeeting = (id: string) => {
-    setMeetings(meetings.filter((meeting) => meeting.id !== id));
-    setMeetingToDelete(null);
+  const getNotes = async (topicId: string) => {
+    setPageLoading(true);
+    try {
+      const response = await fetch(`/api/note?topicId=${topicId}`);
+      const data = await response.json();
+      setNotes(data);
+    } catch (error) {
+      console.error("Error fetching topic notes:", error);
+    } finally {
+      setPageLoading(false);
+    }
   };
 
-  const renameMeeting = () => {
-    if (meetingToRename && newMeetingName.trim()) {
+  const deleteNote = (id: string) => {
+    setNotes(notes.filter((note) => note.id !== id));
+    setNoteToDelete(null);
+  };
+
+  const renameNote = () => {
+    if (noteToRename && newNoteName.trim()) {
       setButtonLoading(true);
-      fetch(`/api/meeting/${meetingToRename.id}`, {
+      fetch(`/api/note/${noteToRename.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: newMeetingName.trim(),
+          title: newNoteName.trim(),
         }),
       })
         .then((res) => res.json())
         .then((data) => {
-          setMeetings(
-            meetings.map((meeting) =>
-              meeting.id === data.id
-                ? { ...meeting, title: data.title }
-                : meeting
+          setNotes(
+            notes.map((note) =>
+              note.id === data.id ? { ...note, title: data.title } : note
             )
           );
-          setMeetingToRename(null);
-          setNewMeetingName("");
+          setNoteToRename(null);
+          setNewNoteName("");
         })
         .catch((err) => console.error(err))
         .finally(() => setButtonLoading(false));
     }
   };
 
-  const moveMeeting = () => {
-    if (meetingToMove && newMeetingProjectId) {
+  const moveNote = () => {
+    if (noteToMove && newNoteTopicId) {
       setButtonLoading(true);
-      fetch(`/api/meeting/${meetingToMove.id}`, {
+      fetch(`/api/note/${noteToMove.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectId: newMeetingProjectId,
+          topicId: newNoteTopicId,
         }),
       })
         .then((res) => res.json())
         .then((data) => {
-          setMeetings(
-            meetings.filter((meeting) => meeting.id !== meetingToMove.id)
-          );
-          setMeetingToMove(null);
-          setnewMeetingProjectIdId("");
+          setNotes(notes.filter((note) => note.id !== noteToMove.id));
+          setNoteToMove(null);
+          setnewNoteTopicIdId("");
         })
         .catch((err) => console.error(err))
         .finally(() => setButtonLoading(false));
     }
   };
 
-  const createMeeting = () => {
-    if (newMeetingTitle.trim() && newMeetingDate && newMeetingTime) {
+  const createNote = () => {
+    if (newNoteTitle.trim() && newNoteDate && newNoteTime) {
       setButtonLoading(true);
-      fetch("/api/meeting", {
+      fetch("/api/note", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: newMeetingTitle.trim(),
-          date: newMeetingDate,
-          time: newMeetingTime,
-          participants: newMeetingParticipants
+          title: newNoteTitle.trim(),
+          date: newNoteDate,
+          time: newNoteTime,
+          participants: newNoteParticipants
             .split(",")
             .map((p) => p.trim())
             .filter((p) => p),
-          projectId: userSelectedProject.id,
+          topicId: userSelectedTopic.id,
           ownerId: user.user?.id,
         }),
       })
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
-          setMeetings([...meetings, data]);
-          setIsCreateMeetingDialogOpen(false);
-          setNewMeetingTitle("");
-          setNewMeetingDate("");
-          setNewMeetingTime("");
-          setNewMeetingParticipants("");
+          setNotes([...notes, data]);
+          setIsCreateNoteDialogOpen(false);
+          setNewNoteTitle("");
+          setNewNoteDate("");
+          setNewNoteTime("");
+          setNewNoteParticipants("");
         })
         .catch((err) => console.error(err))
         .finally(() => setButtonLoading(false));
@@ -360,14 +370,15 @@ export default function MeetBotPage() {
   };
 
   useEffect(() => {
-    getUserProjects();
+    getTopics();
+    getUncategorizedNotes();
   }, [user.user]);
 
   useEffect(() => {
-    if (userSelectedProject) {
-      getProjectMeetings(userSelectedProject?.id);
+    if (userSelectedTopic) {
+      getNotes(userSelectedTopic?.id);
     }
-  }, [userSelectedProject]);
+  }, [userSelectedTopic]);
 
   useEffect(() => {
     if (auth.isLoaded && !auth.isSignedIn) {
@@ -382,7 +393,7 @@ export default function MeetBotPage() {
       <div className="w-64 border-r border-border bg-card flex flex-col">
         <ScrollArea className="flex-grow">
           <div className="p-4 space-y-2">
-            {/* Project Selector Dropdown */}
+            {/* Topic Selector Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -425,12 +436,12 @@ export default function MeetBotPage() {
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search topics..."
                 className="pl-8 mr-1 bg-white"
               />
               <Dialog
-                open={isAddProjectDialogOpen}
-                onOpenChange={setIsAddProjectDialogOpen}
+                open={isAddTopicDialogOpen}
+                onOpenChange={setIsAddTopicDialogOpen}
               >
                 <DialogTrigger asChild>
                   <Button variant="ghost" className="border shadow px-2">
@@ -439,26 +450,26 @@ export default function MeetBotPage() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add New Project</DialogTitle>
+                    <DialogTitle>Add New Topic</DialogTitle>
                     <DialogDescription>
-                      Enter a name for your new project.
+                      Enter a name for your new topic.
                     </DialogDescription>
                   </DialogHeader>
                   <Input
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    placeholder="Project name"
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    placeholder="Topic name"
                   />
                   <DialogFooter>
                     <Button
-                      onClick={addProject}
+                      onClick={addTopic}
                       className="w-full"
-                      disabled={!newProjectName || buttonLoading}
+                      disabled={!newTopicName || buttonLoading}
                     >
                       {buttonLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        "Add Project"
+                        "Add Topic"
                       )}
                     </Button>
                   </DialogFooter>
@@ -469,31 +480,31 @@ export default function MeetBotPage() {
             <Accordion
               type="multiple"
               className="w-full"
-              defaultValue={["userProjects"]}
+              defaultValue={["topics"]}
             >
-              {/* Projects Section */}
-              <AccordionItem value="userProjects">
+              {/* Topics Section */}
+              <AccordionItem value="topics">
                 <AccordionTrigger className="text-sm font-semibold text-muted-foreground hover:no-underline">
-                  Projects
+                  Topics
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-1">
-                    {userProjects.map((project) => (
+                    {topics.map((topic) => (
                       <div
-                        key={project.id}
+                        key={topic.id}
                         className="flex items-center justify-between group px-1 py-1 rounded-md hover:bg-accent cursor-pointer"
                       >
                         <div
                           className="flex items-center flex-grow"
-                          onClick={() => setUserSelectedProject(project)}
+                          onClick={() => setuserSelectedTopic(topic)}
                         >
-                          <FileVideo
+                          <Folder
                             className={`mr-2 h-4 w-4 ${
-                              project.isFavorite ? "text-yellow-500" : ""
+                              topic.isFavorite ? "text-yellow-500" : ""
                             }`}
                           />
                           <span className="text-sm text-muted-foreground group-hover:text-primary">
-                            {project.name}
+                            {topic.name}
                           </span>
                         </div>
                         <DropdownMenu>
@@ -508,22 +519,22 @@ export default function MeetBotPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem
-                              onClick={() => toggleFavorite(project.id)}
+                              onClick={() => toggleFavorite(topic.id)}
                             >
-                              {project.isFavorite
+                              {topic.isFavorite
                                 ? "Remove from favorites"
                                 : "Add to favorites"}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setProjectToRename(project);
-                                setNewName(project.name);
+                                setTopicToRename(topic);
+                                setNewName(topic.name);
                               }}
                             >
                               Rename
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => setProjectToDelete(project)}
+                              onClick={() => setTopicToDelete(topic)}
                             >
                               Delete
                             </DropdownMenuItem>
@@ -531,35 +542,102 @@ export default function MeetBotPage() {
                         </DropdownMenu>
                       </div>
                     ))}
-                    {userProjects.length === 0 && (
+                    {topics.length === 0 && (
                       <div className="text-muted-foreground">
-                        No projects found.
+                        No topics found.
                       </div>
                     )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Favorite Projects Section */}
+              {/* Favorite Topics Section */}
               <AccordionItem value="favorites">
                 <AccordionTrigger className="text-sm font-semibold text-muted-foreground hover:no-underline">
-                  Favorite Projects
+                  Favorite Topics
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-1">
-                    {userProjects
-                      .filter((project) => project.isFavorite)
-                      .map((project) => (
+                    {topics
+                      .filter((topic) => topic.isFavorite)
+                      .map((topic) => (
                         <div
-                          key={project.id}
+                          key={topic.id}
                           className="flex items-center px-1 py-1 rounded-md hover:bg-accent group"
                         >
-                          <FileVideo className="mr-2 h-4 w-4 text-yellow-500" />
+                          <Folder className="mr-2 h-4 w-4 text-yellow-500" />
                           <span className="text-sm text-muted-foreground group-hover:text-primary">
-                            {project.name}
+                            {topic.name}
                           </span>
                         </div>
                       ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Uncategorized Notes */}
+              <AccordionItem value="uncategorized">
+                <AccordionTrigger className="text-sm font-semibold text-muted-foreground hover:no-underline">
+                  Uncategorized Notes
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-1">
+                    {uncategorizedNotes?.map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex items-center px-1 py-1 rounded-md hover:bg-accent group justify-between cursor-pointer w-full"
+                      >
+                        <div className="flex items-center ">
+                          <StickyNote className="mr-2 h-4 w-4" />
+                          <span className="text-sm text-muted-foreground group-hover:text-primary">
+                            {note.title}
+                          </span>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNoteToRename(note);
+                                setNewNoteName(note.title);
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNoteToMove(note);
+                              }}
+                            >
+                              <MoveRight className="mr-2 h-4 w-4" />
+                              Move to Project
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNoteToDelete(note);
+                              }}
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ))}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -580,149 +658,53 @@ export default function MeetBotPage() {
       </div>
 
       {/* Main Content */}
-      {userSelectedProject && (
+      {userSelectedTopic ? (
         <div className="flex-1 flex flex-col bg-background">
           <header className="bg-card p-4 border-b border-border flex items-center justify-between">
             <h1 className="text-xl font-semibold text-primary">
-              {userSelectedProject.name} - Meetings
+              {userSelectedTopic.name} - Notes
             </h1>
             <Button
               variant={"outline"}
               className="shadow"
-              onClick={() => setIsCreateMeetingDialogOpen(true)}
+              onClick={() => setIsCreateNoteDialogOpen(true)}
             >
               <Plus className="h-4 w-4" />
-              Add Meeting
+              Add Note
             </Button>
           </header>
 
           <main className="flex-1 p-4 space-y-4">
             <div className="flex-1 overflow-y-auto">
-              <div className="grid gap-4">
-                {meetings.map((meeting) => (
-                  <Card
-                    key={meeting.id}
-                    className="cursor-pointer hover:bg-accent/50 transition-colors"
-                    onClick={() => {
-                      router.push(
-                        `/meetbot/meeting/${userSelectedProject.id}/${meeting.id}`
-                      );
-                    }}
-                  >
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div
-                          onClick={() =>
-                            router.push(`/meetbot/meeting/${meeting.id}`)
-                          }
-                        >
-                          <CardTitle>{meeting.title}</CardTitle>
-                          <CardDescription className="mt-1">
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="w-4 h-4 mr-1" />
-                              <span>{meeting.date}</span>
-                              <Clock className="w-4 h-4 ml-2 mr-1" />
-                              <span>{meeting.time}</span>
-                            </div>
-                          </CardDescription>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="flex -space-x-2">
-                            {meeting.participants
-                              .slice(0, 3)
-                              .map((participant, index) => (
-                                <Avatar
-                                  key={index}
-                                  className="border-2 border-background"
-                                >
-                                  <AvatarFallback>
-                                    {participant[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                              ))}
-                            {meeting.participants.length > 3 && (
-                              <Avatar className="border-2 border-background">
-                                <AvatarFallback>
-                                  +{meeting.participants.length - 3}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMeetingToRename(meeting);
-                                  setNewMeetingName(meeting.title);
-                                }}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Rename
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMeetingToMove(meeting);
-                                }}
-                              >
-                                <MoveRight className="mr-2 h-4 w-4" />
-                                Move to Project
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMeetingToDelete(meeting);
-                                }}
-                              >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
+              <div className="grid gap-4">{/* here goes notes */}</div>
             </div>
           </main>
         </div>
+      ) : (
+        <Recorder />
       )}
 
-      {/* Rename Project Dialog */}
+      {/* Rename Topic Dialog */}
       <Dialog
-        open={!!projectToRename}
-        onOpenChange={() => setProjectToRename(null)}
+        open={!!topicToRename}
+        onOpenChange={() => setTopicToRename(null)}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename Project</DialogTitle>
+            <DialogTitle>Rename Topic</DialogTitle>
             <DialogDescription>
-              Enter a new name for the project.
+              Enter a new name for the topic.
             </DialogDescription>
           </DialogHeader>
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="New project name"
+            placeholder="New topic name"
           />
           <DialogFooter>
             <Button
-              onClick={renameProject}
-              disabled={newName === projectToRename?.name || buttonLoading}
+              onClick={renameTopic}
+              disabled={newName === topicToRename?.name || buttonLoading}
             >
               {buttonLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -734,38 +716,38 @@ export default function MeetBotPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Project Dialog */}
+      {/* Delete Topic Dialog */}
       <AlertDialog
-        open={!!projectToDelete}
-        onOpenChange={() => setProjectToDelete(null)}
+        open={!!topicToDelete}
+        onOpenChange={() => setTopicToDelete(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              project "{projectToDelete?.name}".
+              topic "{topicToDelete?.name}".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
             <Label htmlFor="confirmation">
-              Type "{projectToDelete?.name}" to confirm:
+              Type "{topicToDelete?.name}" to confirm:
             </Label>
             <Input
               id="confirmation"
               value={deleteConfirmation}
               onChange={(e) => setDeleteConfirmation(e.target.value)}
-              placeholder="Type project name to confirm"
+              placeholder="Type topic name to confirm"
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProjectToDelete(null)}>
+            <AlertDialogCancel onClick={() => setTopicToDelete(null)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteProject(projectToDelete?.id || "")}
+              onClick={() => deleteTopic(topicToDelete?.id || "")}
               disabled={
-                deleteConfirmation !== projectToDelete?.name || buttonLoading
+                deleteConfirmation !== topicToDelete?.name || buttonLoading
               }
             >
               {buttonLoading ? <Loader2 className="animate-spin" /> : "Delete"}
@@ -774,29 +756,24 @@ export default function MeetBotPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Meeting Dialogs */}
-      <Dialog
-        open={!!meetingToRename}
-        onOpenChange={() => setMeetingToRename(null)}
-      >
+      {/* Note Dialogs */}
+      <Dialog open={!!noteToRename} onOpenChange={() => setNoteToRename(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename Meeting</DialogTitle>
+            <DialogTitle>Rename Note</DialogTitle>
             <DialogDescription>
-              Enter a new name for the meeting.
+              Enter a new name for the note.
             </DialogDescription>
           </DialogHeader>
           <Input
-            value={newMeetingName}
-            onChange={(e) => setNewMeetingName(e.target.value)}
-            placeholder="New meeting name"
+            value={newNoteName}
+            onChange={(e) => setNewNoteName(e.target.value)}
+            placeholder="New note name"
           />
           <DialogFooter>
             <Button
-              onClick={renameMeeting}
-              disabled={
-                newMeetingName === meetingToRename?.title || buttonLoading
-              }
+              onClick={renameNote}
+              disabled={newNoteName === noteToRename?.title || buttonLoading}
             >
               {buttonLoading ? <Loader2 className="animate-spin" /> : "Rename"}
             </Button>
@@ -804,36 +781,30 @@ export default function MeetBotPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!meetingToMove}
-        onOpenChange={() => setMeetingToMove(null)}
-      >
+      <Dialog open={!!noteToMove} onOpenChange={() => setNoteToMove(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Move Meeting</DialogTitle>
+            <DialogTitle>Move Note</DialogTitle>
             <DialogDescription>
-              Select a project to move this meeting to.
+              Select a topic to move this note to.
             </DialogDescription>
           </DialogHeader>
-          <Select
-            value={newMeetingProjectId}
-            onValueChange={setnewMeetingProjectIdId}
-          >
+          <Select value={newNoteTopicId} onValueChange={setnewNoteTopicIdId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a project" />
+              <SelectValue placeholder="Select a topic" />
             </SelectTrigger>
             <SelectContent>
-              {userProjects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
+              {topics.map((topic) => (
+                <SelectItem key={topic.id} value={topic.id}>
+                  {topic.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <DialogFooter>
             <Button
-              onClick={moveMeeting}
-              disabled={!newMeetingProjectId || buttonLoading}
+              onClick={moveNote}
+              disabled={!newNoteTopicId || buttonLoading}
             >
               {buttonLoading ? <Loader2 className="animate-spin" /> : "Move"}
             </Button>
@@ -842,25 +813,25 @@ export default function MeetBotPage() {
       </Dialog>
 
       <AlertDialog
-        open={!!meetingToDelete}
-        onOpenChange={() => setMeetingToDelete(null)}
+        open={!!noteToDelete}
+        onOpenChange={() => setNoteToDelete(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Meeting</AlertDialogTitle>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the meeting "
-              {meetingToDelete?.title}"? This action cannot be undone.
+              Are you sure you want to delete the note "{noteToDelete?.title}
+              "? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMeetingToDelete(null)}>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteMeeting(meetingToDelete?.id || "")}
+              onClick={() => deleteNote(noteToDelete?.id || "")}
               disabled={
-                deleteConfirmation !== meetingToDelete?.title || buttonLoading
+                deleteConfirmation !== noteToDelete?.title || buttonLoading
               }
             >
               {buttonLoading ? <Loader2 className="animate-spin" /> : "Delete"}
@@ -870,14 +841,14 @@ export default function MeetBotPage() {
       </AlertDialog>
 
       <Dialog
-        open={isCreateMeetingDialogOpen}
-        onOpenChange={setIsCreateMeetingDialogOpen}
+        open={isCreateNoteDialogOpen}
+        onOpenChange={setIsCreateNoteDialogOpen}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Meeting</DialogTitle>
+            <DialogTitle>Create New Note</DialogTitle>
             <DialogDescription>
-              Enter the details for the new meeting.
+              Enter the details for the new note.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -887,8 +858,8 @@ export default function MeetBotPage() {
               </Label>
               <Input
                 id="title"
-                value={newMeetingTitle}
-                onChange={(e) => setNewMeetingTitle(e.target.value)}
+                value={newNoteTitle}
+                onChange={(e) => setNewNoteTitle(e.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -899,8 +870,8 @@ export default function MeetBotPage() {
               <Input
                 id="date"
                 type="date"
-                value={newMeetingDate}
-                onChange={(e) => setNewMeetingDate(e.target.value)}
+                value={newNoteDate}
+                onChange={(e) => setNewNoteDate(e.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -911,8 +882,8 @@ export default function MeetBotPage() {
               <Input
                 id="time"
                 type="time"
-                value={newMeetingTime}
-                onChange={(e) => setNewMeetingTime(e.target.value)}
+                value={newNoteTime}
+                onChange={(e) => setNewNoteTime(e.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -922,8 +893,8 @@ export default function MeetBotPage() {
               </Label>
               <Input
                 id="participants"
-                value={newMeetingParticipants}
-                onChange={(e) => setNewMeetingParticipants(e.target.value)}
+                value={newNoteParticipants}
+                onChange={(e) => setNewNoteParticipants(e.target.value)}
                 placeholder="Enter names separated by commas"
                 className="col-span-3"
               />
@@ -931,13 +902,13 @@ export default function MeetBotPage() {
           </div>
           <DialogFooter>
             <Button
-              onClick={createMeeting}
-              disabled={!newMeetingTitle || buttonLoading}
+              onClick={createNote}
+              disabled={!newNoteTitle || buttonLoading}
             >
               {buttonLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "Create Meeting"
+                "Create Note"
               )}
             </Button>
           </DialogFooter>

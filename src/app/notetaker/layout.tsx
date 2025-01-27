@@ -13,7 +13,7 @@ export default function MeetBotLayout({
   return (
     <div className="h-screen flex flex-col">
       <div className="">
-        <Navbar title={"MeetBot"} />
+        <Navbar title={"NoteTaker"} />
       </div>
       <div className="flex-grow">{children}</div>
     </div>
