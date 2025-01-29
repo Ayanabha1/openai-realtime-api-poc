@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 // PATCH method to update a meeting
-export async function PATCH(req: Request, { params }: { params: any }) {
+export async function PATCH(req: NextRequest, { params }: { params: any }) {
   try {
     const body = await req.json();
     const { meetingId } = params;

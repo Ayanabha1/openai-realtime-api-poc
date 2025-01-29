@@ -5,15 +5,10 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Play, Pause, RotateCcw, GripVertical } from "lucide-react";
+import { Play, Pause, RotateCcw, GripVertical, Pencil } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-
-interface NotesDisplayProps {
-  audioUrl?: string;
-  audioDuration?: number;
-}
 
 interface DraggableItemProps {
   id: string;
@@ -34,14 +29,14 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
 }) => {
   const ref = useRef<HTMLLIElement>(null);
 
-  const [{ handlerId }, drop] = useDrop({
+  const [{ handlerId }, drop]: any = useDrop({
     accept: "item",
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId(),
       };
     },
-    hover(item: { index: number }, monitor) {
+    hover(item: any, monitor) {
       if (!ref.current) {
         return;
       }
@@ -96,13 +91,15 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
       <div className="mt-1 cursor-grab">
         <GripVertical size={16} />
       </div>
-      <input type="checkbox" className="mt-1.5" />
       {isEditing ? (
         <input
           type="text"
           value={text}
-          onChange={(e) => updateItem(index, e.target.value)}
+          onChange={(e) => {
+            updateItem(index, e.target.value);
+          }}
           className="font-mono text-sm w-full border-b border-gray-300 focus:outline-none focus:border-blue-500"
+          autoFocus
         />
       ) : (
         <span className="font-mono text-sm">{text}</span>
@@ -111,22 +108,16 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
   );
 };
 
-export default function NotesDisplay({
-  audioUrl,
-  audioDuration,
-}: NotesDisplayProps) {
+export default function NotesDisplay({ noteId }: { noteId: string }) {
   const [showPlayer, setShowPlayer] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [noteDetails, setNoteDetails] = useState<any>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [bulletPoints, setBulletPoints] = useState([
-    "Key point 1: Discussed project timeline and milestones",
-    "Key point 2: Team responsibilities and task allocation",
-    "Key point 3: Budget considerations and resource allocation",
-    "Key point 4: Technical requirements and specifications",
-    "Key point 5: Quality assurance and testing procedures",
-  ]);
+  const [keyPoints, setKeyPoints] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [newKeyPoints, setNewKeyPoints] = useState([]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -142,90 +133,110 @@ export default function NotesDisplay({
     };
   }, []);
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
-
-  const handleSliderChange = (value: number[]) => {
-    const newTime = value[0];
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const togglePlayback = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsEditing(false);
-    console.log("Saved key points:", bulletPoints);
+    console.log("Saved key points:", keyPoints);
+
+    const response = await fetch(`/api/note/${noteId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        key_points: keyPoints,
+      }),
+    });
+    const data = await response.json();
+    console.log(data);
   };
 
-  const moveItem = (dragIndex: number, hoverIndex: number) => {
-    const dragItem = bulletPoints[dragIndex];
-    setBulletPoints((prevPoints) => {
+  const moveItem = async (dragIndex: number, hoverIndex: number) => {
+    const dragItem = keyPoints[dragIndex];
+    let newOrientation = keyPoints;
+    setKeyPoints((prevPoints) => {
       const newPoints = [...prevPoints];
       newPoints.splice(dragIndex, 1);
       newPoints.splice(hoverIndex, 0, dragItem);
+      newOrientation = newPoints;
       return newPoints;
     });
-  };
 
-  const updateItem = (index: number, newText: string) => {
-    setBulletPoints((prevPoints) => {
-      const newPoints = [...prevPoints];
-      newPoints[index] = newText;
-      return newPoints;
+    const response = await fetch(`/api/note/${noteId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        key_points: newOrientation,
+      }),
     });
+    const data = await response.json();
+    console.log(data);
   };
 
-  const suggestions = [
-    "Consider implementing automated testing",
-    "Schedule weekly progress reviews",
-    "Document all technical decisions",
-    "Set up regular stakeholder meetings",
-    "Create detailed project documentation",
-  ];
+  const updateItem = (index: number, text: string) => {
+    const newPoints = [...keyPoints];
+    newPoints[index] = text;
+    setKeyPoints(newPoints.map((item, i) => (i === index ? text : item)));
+  };
+
+  const getNoteDetails = async () => {
+    const response = await fetch(`/api/note/${noteId}`);
+    const data = await response.json();
+    setNoteDetails(data);
+    setKeyPoints(data?.key_points);
+    setSuggestions(data?.suggestions);
+  };
+
+  useEffect(() => {
+    getNoteDetails();
+  }, []);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="container mx-auto p-6 max-w-7xl">
         <div className="flex flex-col space-y-4">
-          {/* Window control dots */}
-          <div className="flex gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-          </div>
-
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-xl font-mono">Meeting Notes</h1>
+            <h1 className="text-xl font-mono">Notes Summarization</h1>
             <p className="text-gray-500 font-mono">
               Generated from audio recording
             </p>
           </div>
 
           {/* Main content */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-mono text-lg">Transcription</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{noteDetails?.transcription}</p>
+            </CardContent>
+          </Card>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="font-mono text-lg">Key Points</CardTitle>
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="font-mono text-lg">
+                    Key Points
+                  </CardTitle>
+                  {isEditing ? (
+                    <Button variant="outline" onClick={handleSave}>
+                      Save
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Pencil />
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {bulletPoints.map((point, index) => (
+                  {keyPoints?.map((point: any, index: any) => (
                     <DraggableItem
                       key={point}
                       id={point}
@@ -237,20 +248,6 @@ export default function NotesDisplay({
                     />
                   ))}
                 </ul>
-                <div className="mt-4">
-                  {isEditing ? (
-                    <Button onClick={handleSave} className="w-full">
-                      Save
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => setIsEditing(true)}
-                      className="w-full"
-                    >
-                      Edit
-                    </Button>
-                  )}
-                </div>
               </CardContent>
             </Card>
 
@@ -260,9 +257,8 @@ export default function NotesDisplay({
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {suggestions.map((suggestion, index) => (
+                  {suggestions?.map((suggestion, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <input type="checkbox" className="mt-1.5" />
                       <span className="font-mono text-sm">{suggestion}</span>
                     </li>
                   ))}
@@ -279,70 +275,7 @@ export default function NotesDisplay({
             <Play className="h-6 w-6" />
           </Button>
 
-          {/* Audio player dialog */}
-          <Dialog open={showPlayer} onOpenChange={setShowPlayer}>
-            <DialogContent className="sm:max-w-md">
-              <div className="space-y-8">
-                <div className="text-center">
-                  <div className="text-5xl font-mono tracking-wider">
-                    {formatTime(currentTime)}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {formatTime(audioDuration || 0)}
-                  </div>
-                </div>
-
-                <Slider
-                  value={[currentTime]}
-                  min={0}
-                  max={audioDuration || 0}
-                  step={0.1}
-                  onValueChange={handleSliderChange}
-                  className="mt-4"
-                />
-
-                <div className="flex justify-center items-center gap-4">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="rounded-full w-12 h-12"
-                    onClick={() => {
-                      if (audioRef.current) {
-                        audioRef.current.currentTime = 0;
-                        setCurrentTime(0);
-                        setIsPlaying(false);
-                      }
-                    }}
-                  >
-                    <RotateCcw className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="default"
-                    className="rounded-full w-16 h-16"
-                    onClick={togglePlayback}
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-8 w-8" />
-                    ) : (
-                      <Play className="h-8 w-8" />
-                    )}
-                  </Button>
-                </div>
-
-                <audio
-                  ref={audioRef}
-                  src={audioUrl}
-                  onEnded={() => setIsPlaying(false)}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onTimeUpdate={() =>
-                    setCurrentTime(audioRef.current?.currentTime || 0)
-                  }
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
+          {/* Audio player */}
         </div>
       </div>
     </DndProvider>

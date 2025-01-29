@@ -19,24 +19,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const notesCount = await prisma.note.count({
-      where: {
-        ownerId,
-      },
-    });
+    const notesCount =
+      (await prisma.note.count({
+        where: {
+          ownerId,
+        },
+      })) || 0 + 1;
 
     // Create the meeting
     const note = await prisma.note.create({
       data: {
-        title: "New Note " + notesCount + 1,
+        title: "New Note " + notesCount,
         audio_url: audioUrl,
         audio_duration: audioDuration,
         ownerId: ownerId,
         date: new Date(),
       },
     });
-
-    console.log("Created note:", note);
 
     return NextResponse.json(note, { status: 201 });
   } catch (error: any) {
@@ -82,7 +81,7 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Notes fetch error:", error);
+    console.error("Notes fetch error:", error.stack);
     return NextResponse.json(
       { error: "Failed to fetch notes" },
       { status: 500 }

@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Bookmark, Pause, Square, Play, RotateCcw, Mic } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { WaveformVisualizer } from "./WaveformVisualizer";
-import NotesDisplay from "./notes-display";
 import AWS from "aws-sdk";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function Recorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -20,12 +20,14 @@ export default function Recorder() {
   const [showPlayer, setShowPlayer] = useState(false);
   const [audioProcessed, setAudioProcessed] = useState(false);
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
+  const [audioProcessing, setAudioProcessing] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const user = useUser();
+  const router = useRouter();
 
   useEffect(() => {
     if (isRecording) {
@@ -60,9 +62,9 @@ export default function Recorder() {
   }, []);
 
   const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
+    accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY,
+    secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_KEY,
+    region: process.env.NEXT_PUBLIC_AWS_REGION,
   });
 
   const formatTime = (seconds: number) => {
@@ -146,17 +148,17 @@ export default function Recorder() {
     setIsPlaying(false);
   };
 
-  const uploadToS3 = async (file: Blob, fileName: string) => {
+  const uploadToS3 = async (file: File) => {
     const params = {
-      Bucket: process.env.AWS_BUCKET_NAME!,
-      Key: fileName,
+      Bucket: process.env.NEXT_PUBLIC_S3_BUCKET!,
+      Key: file.name,
       Body: file,
       ContentType: "audio/wav",
     };
 
     try {
       const data = await s3.upload(params).promise();
-      console.log("File uploaded successfully at", data.Location);
+      return data;
     } catch (error) {
       console.error("Error uploading file:", error);
     }
@@ -164,31 +166,65 @@ export default function Recorder() {
 
   const processAudio = async () => {
     console.log("Processing audio...", recordedAudioBlob);
-    if (!user.user) {
-      console.error("User not authenticated");
-      return;
-    }
+    setAudioProcessing(true);
+    try {
+      if (!user.user) {
+        console.error("User not authenticated");
+        return;
+      }
 
-    // Example usage
-    // if (recordedAudioBlob) {
-    //   await uploadToS3(recordedAudioBlob, "recorded-audio.wav");
-    // }
+      //Example usage
+      let uploadedAudio: any = null;
+      if (recordedAudioBlob) {
+        const d = new Date();
+        const file = new File(
+          [recordedAudioBlob],
+          `${user.user.id}_${d.getTime()}`,
+          { type: "audio/wav" }
+        );
 
-    await fetch("/api/note", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        audioUrl: audioUrl,
-        audioDuration: duration,
-        ownerId: user.user.id,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
+        console.log(file);
+        uploadedAudio = await uploadToS3(file).catch((err) => {
+          console.error("Error uploading audio:", err);
+        });
+      }
+
+      const newNoteRes = await fetch("/api/note", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioUrl: uploadedAudio?.Location,
+          audioDuration: duration,
+          ownerId: user.user.id,
+        }),
       });
+      const newNote = await newNoteRes.json();
+
+      if (!newNote) {
+        console.error("Error creating new note");
+        return;
+      }
+
+      // generate notes
+      await fetch(`/api/process-audio`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: uploadedAudio?.Location,
+          noteId: newNote.id,
+        }),
+      });
+      router.push(`/notetaker/note/${newNote.id}`);
+    } catch (error) {
+      console.error("Error processing audio:", error);
+    } finally {
+      resetRecording();
+      setAudioProcessing(false);
+    }
   };
 
   return (
@@ -287,8 +323,9 @@ export default function Recorder() {
                 variant="default"
                 className="w-full"
                 onClick={processAudio}
+                disabled={!audioUrl || audioProcessing}
               >
-                Process Audio
+                {audioProcessing ? "Processing..." : "Process Audio"}
               </Button>
 
               <audio
