@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { audioUrl, audioDuration, ownerId } = body;
+    const { audioUrl, audioDuration, ownerId, topicId } = body;
 
     // Validate required fields
     if (!audioUrl && !audioDuration && !ownerId) {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
         audio_duration: audioDuration,
         ownerId: ownerId,
         date: new Date(),
+        topicId: topicId || null,
       },
     });
 
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
       // return uncategorized notes
 
       const notes = await prisma.note.findMany({
-        where: { ownerId },
+        where: { ownerId, topicId: null },
       });
       return NextResponse.json(
         { notes, message: "Notes fetched successfully" },

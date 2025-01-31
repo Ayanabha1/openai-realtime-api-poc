@@ -56,3 +56,31 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: any }) {
+  try {
+    const param = await params;
+    const { noteId } = param;
+    if (!noteId) {
+      return NextResponse.json(
+        { error: "noteId is required" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.note.delete({
+      where: { id: noteId },
+    });
+
+    return NextResponse.json(
+      { message: "Note deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Note delete error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete note" },
+      { status: 500 }
+    );
+  }
+}

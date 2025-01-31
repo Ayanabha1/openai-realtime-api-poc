@@ -15,7 +15,6 @@ model Project {
     isFavorite Boolean?  @default(false)
     createdAt  DateTime? @default(now())
     updatedAt  DateTime? @updatedAt
-    Note       Note[]
 }
 
 model Meeting {
@@ -56,6 +55,4 @@ model Note {
     ownerId        String
     Topic          Topic?    @relation(fields: [topicId], references: [id])
     topicId        String?   @db.ObjectId
-    Project        Project?  @relation(fields: [projectId], references: [id])
-    projectId      String?   @db.ObjectId
 }

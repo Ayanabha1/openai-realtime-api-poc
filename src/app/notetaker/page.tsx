@@ -76,6 +76,7 @@ import {
 } from "@/components/ui/select";
 import { Loader } from "@/components/loader";
 import Recorder from "@/components/notetaker/recorder";
+import CompactRecorder from "@/components/notetaker/compactRecorder";
 
 type Topic = {
   id: string;
@@ -90,6 +91,9 @@ type Note = {
   audio_url: string;
   audio_duration: number;
   topicId: string;
+  createdAt: Date;
+  transcription: string;
+  tags: string[];
 };
 
 export default function MeetBotPage() {
@@ -269,9 +273,11 @@ export default function MeetBotPage() {
   const getNotes = async (topicId: string) => {
     setPageLoading(true);
     try {
-      const response = await fetch(`/api/note?topicId=${topicId}`);
+      const response = await fetch(
+        `/api/note?topicId=${topicId}&ownerId=${user.user?.id}`
+      );
       const data = await response.json();
-      setNotes(data);
+      setNotes(data?.notes);
     } catch (error) {
       console.error("Error fetching topic notes:", error);
     } finally {
@@ -279,7 +285,46 @@ export default function MeetBotPage() {
     }
   };
 
-  const deleteNote = (id: string) => {
+  const deleteNote = async (id: string) => {
+    setButtonLoading(true);
+    try {
+      const response = await fetch(`/api/note/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      fetch(`/api/note/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => {
+          if (res.ok) {
+            console.log("Note deleted successfully");
+          } else {
+            console.error("Failed to delete note");
+          }
+        })
+        .catch((err) => console.error("Error deleting note:", err))
+        .finally(() => setButtonLoading(false));
+
+      if (response.ok) {
+        console.log("Note deleted successfully");
+        setNotes(notes.filter((note) => note.id !== id));
+        setUncategorizedNotes(
+          uncategorizedNotes.filter((note) => note.id !== id)
+        );
+        setNoteToDelete(null);
+      } else {
+        console.error("Failed to delete note");
+      }
+    } catch (err) {
+      console.error("Error deleting note:", err);
+    } finally {
+      setButtonLoading(false);
+    }
     setNotes(notes.filter((note) => note.id !== id));
     setNoteToDelete(null);
   };
@@ -300,6 +345,12 @@ export default function MeetBotPage() {
         .then((data) => {
           setNotes(
             notes.map((note) =>
+              note.id === data.id ? { ...note, title: data.title } : note
+            )
+          );
+
+          setUncategorizedNotes(
+            uncategorizedNotes.map((note) =>
               note.id === data.id ? { ...note, title: data.title } : note
             )
           );
@@ -325,7 +376,9 @@ export default function MeetBotPage() {
       })
         .then((res) => res.json())
         .then((data) => {
-          setNotes(notes.filter((note) => note.id !== noteToMove.id));
+          setUncategorizedNotes(
+            notes.filter((note) => note.id !== noteToMove.id)
+          );
           setNoteToMove(null);
           setnewNoteTopicIdId("");
         })
@@ -369,9 +422,30 @@ export default function MeetBotPage() {
     }
   };
 
+  const getDate = (date: Date) => {
+    return date.toISOString().slice(0, 10);
+  };
+
+  const getTime = (date: Date) => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+    return `${hours}:${minutesStr} ${ampm}`;
+  };
+
+  const truncateString = (str: string, length: number = 100) => {
+    if (str.length <= length) return str;
+    return `${str.substring(0, length)}...`;
+  };
+
   useEffect(() => {
-    getTopics();
-    getUncategorizedNotes();
+    if (user?.user?.id) {
+      getTopics();
+      getUncategorizedNotes();
+    }
   }, [user.user]);
 
   useEffect(() => {
@@ -499,9 +573,8 @@ export default function MeetBotPage() {
                           onClick={() => setuserSelectedTopic(topic)}
                         >
                           <Folder
-                            className={`mr-2 h-4 w-4 ${
-                              topic.isFavorite ? "text-yellow-500" : ""
-                            }`}
+                            className={`mr-2 h-4 w-4 ${topic.isFavorite ? "text-yellow-500" : ""
+                              }`}
                           />
                           <span className="text-sm text-muted-foreground group-hover:text-primary">
                             {topic.name}
@@ -622,7 +695,7 @@ export default function MeetBotPage() {
                               }}
                             >
                               <MoveRight className="mr-2 h-4 w-4" />
-                              Move to Project
+                              Move to Topic
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -676,12 +749,114 @@ export default function MeetBotPage() {
 
           <main className="flex-1 p-4 space-y-4">
             <div className="flex-1 overflow-y-auto">
-              <div className="grid gap-4">{/* here goes notes */}</div>
+              <div className="flex flex-col gap-4 h-[calc(100%-100px)] overflow-auto">
+                {notes?.map((note) => (
+                  <div
+                    key={note.id}
+                    className={`group bg-card rounded-xl border shadow-sm p-5 hover:shadow-md transition-all cursor-pointer h-fit`}
+                    onClick={() => {
+                      router.push(`/notetaker/note/${note.id}`);
+                    }}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h2 className="font-semibold text-lg mb-1">
+                            {note.title}
+                          </h2>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            <span>{getDate(new Date(note.date))}</span>
+                            <span>•</span>
+                            <span>{getTime(new Date(note.date))}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setNoteToRename(note);
+                                  setNewNoteName(note.title);
+                                }}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setNoteToMove(note);
+                                }}
+                              >
+                                <MoveRight className="mr-2 h-4 w-4" />
+                                Move to Project
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setNoteToDelete(note);
+                                }}
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {truncateString(note.transcription, 200)}
+                      </p>
+
+                      {/* <div className="flex items-center justify-between">
+                        <div className="flex gap-2">
+                          {note.tags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Edited {note.lastEdited}
+                        </span>
+                      </div> */}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </main>
+          <div className="mt-auto mb-14 p-4 relative">
+            <CompactRecorder topicId={userSelectedTopic.id} />
+          </div>
         </div>
       ) : (
-        <Recorder />
+        <div className="flex-1 flex flex-col">
+          <header className="bg-card p-4 border-b border-border">
+            <h1 className="text-xl font-semibold text-primary">New Recording</h1>
+          </header>
+          <div className="flex-1">
+            <Recorder />
+          </div>
+        </div>
       )}
 
       {/* Rename Topic Dialog */}
@@ -824,6 +999,13 @@ export default function MeetBotPage() {
               "? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div>
+            <Input
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder="Enter note name to confirm deletion"
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setNoteToDelete(null)}>
               Cancel
