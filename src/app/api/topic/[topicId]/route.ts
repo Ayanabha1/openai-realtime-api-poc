@@ -5,11 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 export async function PATCH(req: NextRequest, { params }: { params: any }) {
   try {
     const body = await req.json();
-    const { projectId } = params;
+    const { topicId } = params;
 
-    if (!projectId) {
+    if (!topicId) {
       return NextResponse.json(
-        { error: "projectId is required" },
+        { error: "topicId is required" },
         { status: 400 }
       );
     }
@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
     // Validate required fields
     if ((!name && isFavorite === undefined) || isFavorite === null) {
       return NextResponse.json(
-        { error: "name and isFavorite are required" },
+        { error: "name or isFavorite are required" },
         { status: 400 }
       );
     }
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
 
     // Update the topic
     const topic = await prisma.topic.update({
-      where: { id: projectId },
+      where: { id: topicId },
       data: updatedData,
     });
 
@@ -51,28 +51,68 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
 // Optional: DELETE method to delete a topic
 export async function DELETE(req: NextRequest, { params }: { params: any }) {
   try {
-    const { projectId } = params;
+    const { topicId } = params;
 
     // Validate required fields
-    if (!projectId) {
+    if (!topicId) {
       return NextResponse.json(
-        { error: "projectId is required" },
+        { error: "topicId is required" },
         { status: 400 }
       );
     }
 
     // Delete the topic
     await prisma.topic.delete({
-      where: { id: projectId },
+      where: { id: topicId },
     });
 
-    console.log(`Deleted topic with id: ${projectId}`);
+    console.log(`Deleted topic with id: ${topicId}`);
 
     return NextResponse.json({ message: "Topic deleted" }, { status: 200 });
   } catch (error: any) {
     console.error("Topic delete error:", error);
     return NextResponse.json(
       { error: "Failed to delete topic" },
+      { status: 500 }
+    );
+  }
+}
+
+// GET method to retrieve a single topic
+export async function GET(req: NextRequest, { params }: { params: any }) {
+  try {
+    const { topicId } = params;
+
+    // Validate required fields
+    if (!topicId) {
+      return NextResponse.json(
+        { error: "topicId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get the topic
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      include: {
+        notes: true,
+      },
+    });
+
+    if (!topic) {
+      return NextResponse.json(
+        { error: "Topic not found" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Retrieved topic:", topic);
+
+    return NextResponse.json({ topic }, { status: 200 });
+  } catch (error: any) {
+    console.error("Topic retrieval error:", error);
+    return NextResponse.json(
+      { error: "Failed to retrieve topic" },
       { status: 500 }
     );
   }

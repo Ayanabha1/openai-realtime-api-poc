@@ -245,14 +245,15 @@ export default function CompactRecorder({
   };
 
   return (
-    <div className="m-4 mx-0">
-      <Card className="p-0">
+    <div className="mx-0">
+      <Card className="p-2 rounded-none">
         <CardContent className="px-4 py-2">
           <div className="flex items-center my-auto gap-4">
             <div>
               {!recordedAudioBlob ? (
                 <Button
-                  variant="default"
+                  variant="outline"
+                  className="shadow"
                   onClick={isRecording ? stopRecording : startRecording}
                 >
                   {isRecording ? (
@@ -310,7 +311,11 @@ export default function CompactRecorder({
             </div>
 
             {recordedAudioBlob && (
-              <Button variant="outline" onClick={resetRecording}>
+              <Button
+                variant="outline"
+                onClick={resetRecording}
+                disabled={audioProcessing}
+              >
                 Reset
               </Button>
             )}

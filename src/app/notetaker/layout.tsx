@@ -1,21 +1,16 @@
-import { Navbar } from "@/components/meetbot/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@radix-ui/react-scroll-area";
-import { ChevronRight, Settings } from "lucide-react";
+import Sidebar from "@/components/notetaker/sidebar";
 
-export default function MeetBotLayout({
+export default function NotetakerLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <div className="h-screen flex flex-col">
-      <div className="">
-        <Navbar title={"NoteTaker"} />
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 flex flex-col bg-background">
+        {children}
       </div>
-      <div className="flex-grow">{children}</div>
     </div>
   );
 }
