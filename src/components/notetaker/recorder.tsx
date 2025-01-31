@@ -9,6 +9,7 @@ import { WaveformVisualizer } from "./WaveformVisualizer";
 import AWS from "aws-sdk";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import toast from 'react-hot-toast';
 
 export default function Recorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -169,11 +170,10 @@ export default function Recorder() {
     setAudioProcessing(true);
     try {
       if (!user.user) {
-        console.error("User not authenticated");
+        toast.error("You must be signed in to record audio");
         return;
       }
 
-      //Example usage
       let uploadedAudio: any = null;
       if (recordedAudioBlob) {
         const d = new Date();
@@ -183,9 +183,10 @@ export default function Recorder() {
           { type: "audio/wav" }
         );
 
-        console.log(file);
         uploadedAudio = await uploadToS3(file).catch((err) => {
           console.error("Error uploading audio:", err);
+          toast.error("Failed to upload audio");
+          throw err;
         });
       }
 
@@ -200,14 +201,13 @@ export default function Recorder() {
           ownerId: user.user.id,
         }),
       });
-      const newNote = await newNoteRes.json();
 
-      if (!newNote) {
-        console.error("Error creating new note");
-        return;
+      if (!newNoteRes.ok) {
+        throw new Error("Failed to create note");
       }
 
-      // generate notes
+      const newNote = await newNoteRes.json();
+
       await fetch(`/api/process-audio`, {
         method: "POST",
         headers: {
@@ -218,9 +218,12 @@ export default function Recorder() {
           noteId: newNote.id,
         }),
       });
+
+      toast.success("Recording saved and processed successfully!");
       router.push(`/notetaker/note/${newNote.id}`);
     } catch (error) {
       console.error("Error processing audio:", error);
+      toast.error("Failed to process recording");
     } finally {
       resetRecording();
       setAudioProcessing(false);

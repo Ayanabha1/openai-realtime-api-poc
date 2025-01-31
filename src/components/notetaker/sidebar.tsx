@@ -46,6 +46,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { Label } from "../ui/label";
 import { Loader } from "@/components/loader";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 type Topic = {
     id: string;
@@ -751,6 +752,96 @@ export default function Sidebar() {
                             onClick={() => deleteTopic(topicToDelete?.id || "")}
                             disabled={
                                 deleteConfirmation !== topicToDelete?.name || buttonLoading
+                            }
+                        >
+                            {buttonLoading ? <Loader2 className="animate-spin" /> : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            {/* Note Dialogs */}
+            <Dialog open={!!noteToRename} onOpenChange={() => setNoteToRename(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Note</DialogTitle>
+                        <DialogDescription>
+                            Enter a new name for the note.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Input
+                        value={newNoteName}
+                        onChange={(e) => setNewNoteName(e.target.value)}
+                        placeholder="New note name"
+                    />
+                    <DialogFooter>
+                        <Button
+                            onClick={renameNote}
+                            disabled={newNoteName === noteToRename?.title || buttonLoading}
+                        >
+                            {buttonLoading ? <Loader2 className="animate-spin" /> : "Rename"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!noteToMove} onOpenChange={() => setNoteToMove(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Move Note</DialogTitle>
+                        <DialogDescription>
+                            Select a topic to move this note to.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Select value={newNoteTopicId} onValueChange={setnewNoteTopicIdId}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a topic" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {topics.map((topic) => (
+                                <SelectItem key={topic.id} value={topic.id}>
+                                    {topic.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <DialogFooter>
+                        <Button
+                            onClick={moveNote}
+                            disabled={!newNoteTopicId || buttonLoading}
+                        >
+                            {buttonLoading ? <Loader2 className="animate-spin" /> : "Move"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog
+                open={!!noteToDelete}
+                onOpenChange={() => setNoteToDelete(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete the note "{noteToDelete?.title}
+                            "? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div>
+                        <Input
+                            value={deleteConfirmation}
+                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            placeholder="Enter note name to confirm deletion"
+                        />
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setNoteToDelete(null)}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => deleteNote(noteToDelete?.id || "")}
+                            disabled={
+                                deleteConfirmation !== noteToDelete?.title || buttonLoading
                             }
                         >
                             {buttonLoading ? <Loader2 className="animate-spin" /> : "Delete"}

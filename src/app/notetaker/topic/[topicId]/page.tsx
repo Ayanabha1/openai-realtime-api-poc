@@ -189,9 +189,9 @@ export default function TopicPage() {
     };
 
     return (
-        <div className="flex flex-col h-screen relative">
+        <div className="flex flex-col h-screen relative overflow-hidden">
             {isLoading && <Loader fullScreen={true} />}
-            <div className="flex-1 flex flex-col bg-background">
+            <div className="flex-1 flex flex-col bg-background h-full">
                 <header className="bg-card p-4 border-b border-border flex items-center justify-between">
                     <h1 className="text-xl font-semibold text-primary">
                         {topic?.name} - Notes
@@ -199,9 +199,9 @@ export default function TopicPage() {
 
                 </header>
 
-                <main className="flex-1 p-4 space-y-4">
-                    <div className="flex-1 overflow-y-auto">
-                        <div className="flex flex-col gap-4 h-[calc(100%-100px)] overflow-auto">
+                <main className="flex-1 p-4 space-y-4 h-full">
+                    <div className="flex-1 h-full">
+                        <div className="flex flex-col gap-4 h-full overflow-y-scroll pb-32">
                             {notes?.map((note) => (
                                 <div
                                     key={note.id}

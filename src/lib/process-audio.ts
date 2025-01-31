@@ -17,24 +17,23 @@ async function fetchAudioFile(url: string): Promise<Blob> {
   return response.blob();
 }
 
-async function transcribeAudio(audioBuffer: ArrayBuffer): Promise<string> {
-  const tempDir = join(process.cwd(), "temp");
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
-  }
-  const tempFile = join(tempDir, `${uuidv4()}.wav`);
-  const buffer = Buffer.from(audioBuffer);
-  writeFileSync(tempFile, buffer);
-  const response = await openai.audio.transcriptions
-    .create({
-      model: "whisper-1",
-      file: createReadStream(tempFile),
-    })
-    .catch((err) => {
-      console.error("Transcription failed", err);
+async function transcribeAudio(audioBlob: Blob): Promise<string> {
+  try {
+    // Convert Blob to File
+    const file = new File([audioBlob], `${uuidv4()}.wav`, {
+      type: "audio/wav",
     });
-  unlinkSync(tempFile);
-  return response!.text;
+
+    const response = await openai.audio.transcriptions.create({
+      model: "whisper-1",
+      file: file,
+    });
+
+    return response.text;
+  } catch (err) {
+    console.error("Transcription failed", err);
+    throw err;
+  }
 }
 
 async function generateSummaryNotes(transcription: string): Promise<string[]> {

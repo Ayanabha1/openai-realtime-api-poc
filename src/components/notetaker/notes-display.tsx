@@ -274,182 +274,186 @@ export default function NotesDisplay({ noteId }: { noteId: string }) {
   };
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-screen">
       <DndProvider backend={HTML5Backend}>
         {(isLoadingNotes || isUpdatingKeyPoints) && <Loader fullScreen={true} />}
-        <div className="container mx-auto p-6 max-w-7xl">
-          <div className="flex flex-col space-y-4">
-            {/* Header */}
-            <div className="flex gap-4 mb-8">
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => router.back()}
-                className="hover:bg-accent mt-1"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-semibold mb-1">{noteDetails?.title}</h1>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <p className="text-sm font-mono">Notes Summarization</p>
-                  <span>•</span>
-                  <p className="text-sm font-mono">Generated from audio recording</p>
-                </div>
-              </div>
-            </div>
+        <div className="h-full overflow-y-scroll">
 
-            {/* Main content */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between w-full">
-                  <CardTitle className="font-mono text-lg">
-                    Key Points
-                  </CardTitle>
-                  {isEditing ? (
-                    <Button variant="outline" onClick={handleSave}>
-                      Save
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Pencil />
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {keyPoints?.map((point: any, index: any) => (
-                    <DraggableItem
-                      key={point}
-                      id={point}
-                      index={index}
-                      text={point}
-                      isEditing={isEditing}
-                      moveItem={moveItem}
-                      updateItem={updateItem}
-                      onDragEnd={handleDragEnd}
-                    />
-                  ))}
-                </ul>
-
-                {isEditing && (
-                  <div className="mt-4 flex gap-2">
-                    <input
-                      type="text"
-                      value={newKeyPoint}
-                      onChange={(e) => setNewKeyPoint(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAddKeyPoint();
-                        }
-                      }}
-                      placeholder="Add a new key point..."
-                      className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={handleAddKeyPoint}
-                      disabled={!newKeyPoint.trim()}
-                    >
-                      Add
-                    </Button>
+          <div className="container mx-auto p-6 max-w-7xl">
+            <div className="flex flex-col space-y-4">
+              {/* Header */}
+              <div className="flex gap-4 mb-8">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => router.back()}
+                  className="hover:bg-accent mt-1"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-semibold mb-1">{noteDetails?.title}</h1>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <p className="text-sm font-mono">Notes Summarization</p>
+                    <span>•</span>
+                    <p className="text-sm font-mono">Generated from audio recording</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Accordion type="single" collapsible>
-                <AccordionItem value="transcription">
-                  <Card>
-                    <CardHeader className="pb-0">
-                      <AccordionTrigger>
-                        <CardTitle className="font-mono text-lg">Transcription</CardTitle>
-                      </AccordionTrigger>
-                    </CardHeader>
-                    <AccordionContent>
-                      <CardContent>
-                        <p>{noteDetails?.transcription}</p>
-                      </CardContent>
-                    </AccordionContent>
-                  </Card>
-                </AccordionItem>
-              </Accordion>
+                </div>
+              </div>
 
-              <Accordion type="single" collapsible>
-                <AccordionItem value="suggestions">
-                  <Card>
-                    <CardHeader className="pb-0">
-                      <AccordionTrigger>
-                        <CardTitle className="font-mono text-lg">Suggestions</CardTitle>
-                      </AccordionTrigger>
-                    </CardHeader>
-                    <AccordionContent>
-                      <CardContent>
-                        <ul className="space-y-3">
-                          {suggestions?.map((suggestion, index) => (
-                            <li key={index} className="prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{suggestion}</ReactMarkdown>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </AccordionContent>
-                  </Card>
-                </AccordionItem>
-              </Accordion>
+              {/* Main content */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between w-full">
+                    <CardTitle className="font-mono text-lg">
+                      Key Points
+                    </CardTitle>
+                    {isEditing ? (
+                      <Button variant="outline" onClick={handleSave}>
+                        Save
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Pencil />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {keyPoints?.map((point: any, index: any) => (
+                      <DraggableItem
+                        key={point}
+                        id={point}
+                        index={index}
+                        text={point}
+                        isEditing={isEditing}
+                        moveItem={moveItem}
+                        updateItem={updateItem}
+                        onDragEnd={handleDragEnd}
+                      />
+                    ))}
+                  </ul>
+
+                  {isEditing && (
+                    <div className="mt-4 flex gap-2">
+                      <input
+                        type="text"
+                        value={newKeyPoint}
+                        onChange={(e) => setNewKeyPoint(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddKeyPoint();
+                          }
+                        }}
+                        placeholder="Add a new key point..."
+                        className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={handleAddKeyPoint}
+                        disabled={!newKeyPoint.trim()}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-32">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="transcription">
+                    <Card>
+                      <CardHeader className="pb-0">
+                        <AccordionTrigger>
+                          <CardTitle className="font-mono text-lg">Transcription</CardTitle>
+                        </AccordionTrigger>
+                      </CardHeader>
+                      <AccordionContent>
+                        <CardContent>
+                          <p>{noteDetails?.transcription}</p>
+                        </CardContent>
+                      </AccordionContent>
+                    </Card>
+                  </AccordionItem>
+                </Accordion>
+
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="suggestions">
+                    <Card>
+                      <CardHeader className="pb-0">
+                        <AccordionTrigger>
+                          <CardTitle className="font-mono text-lg">Suggestions</CardTitle>
+                        </AccordionTrigger>
+                      </CardHeader>
+                      <AccordionContent>
+                        <CardContent>
+                          <ul className="space-y-3">
+                            {suggestions?.map((suggestion, index) => (
+                              <li key={index} className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown>{suggestion}</ReactMarkdown>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </AccordionContent>
+                    </Card>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+
+
             </div>
-
-
           </div>
-        </div>
 
-        {/* Audio element */}
-        <audio
-          ref={audioRef}
-          src={noteDetails?.audio_url}
-          onEnded={() => setIsPlaying(false)}
-        />
+          {/* Audio element */}
+          <audio
+            ref={audioRef}
+            src={noteDetails?.audio_url}
+            onEnded={() => setIsPlaying(false)}
+          />
 
-        {/* Fixed Audio Player */}
-        <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-border p-4">
-          <div className="container mx-auto max-w-7xl">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePlayPause}
-                className="h-10 w-10"
-              >
-                {isPlaying ? (
-                  <Pause className="h-5 w-5" />
-                ) : (
-                  <Play className="h-5 w-5" />
-                )}
-              </Button>
+          {/* Fixed Audio Player */}
+          <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-border p-4">
+            <div className="container mx-auto max-w-7xl">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={togglePlayPause}
+                  className="h-10 w-10"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-5 w-5" />
+                  ) : (
+                    <Play className="h-5 w-5" />
+                  )}
+                </Button>
 
-              <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm tabular-nums">
-                  {formatTime(currentTime)}
-                </span>
-                <Slider
-                  value={[currentTime]}
-                  max={duration}
-                  step={0.1}
-                  onValueChange={handleSliderChange}
-                  className="flex-1"
-                />
-                <span className="text-sm tabular-nums">
-                  {formatTime(duration)}
-                </span>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-sm tabular-nums">
+                    {formatTime(currentTime)}
+                  </span>
+                  <Slider
+                    value={[currentTime]}
+                    max={duration}
+                    step={0.1}
+                    onValueChange={handleSliderChange}
+                    className="flex-1"
+                  />
+                  <span className="text-sm tabular-nums">
+                    {formatTime(duration)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
       </DndProvider>
     </div>
   );

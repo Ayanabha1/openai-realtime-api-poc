@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from 'react-hot-toast';
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -28,8 +29,9 @@ export default function RootLayout({
           },
         }}
       >
-        <body className={cn("min-h-screen", poppins.className)}>
+        <body className={cn("h-screen", poppins.className)}>
           {children}
+          <Toaster position="bottom-right" />
         </body>
       </ClerkProvider>
     </html>
