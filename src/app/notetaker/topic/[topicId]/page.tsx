@@ -79,29 +79,9 @@ export default function TopicPage() {
         }
     };
 
-    const getTopics = async () => {
-        if (!user.user?.id) return;
-        try {
-            const response = await fetch(`/api/topic?ownerId=${user.user.id}`);
-            const data = await response.json();
-            setTopics(data);
-        } catch (error) {
-            console.error("Error fetching topics:", error);
-        }
-    };
 
-    useEffect(() => {
-        if (user.user?.id) {
-            getTopics();
-        }
-    }, [user.user]);
 
-    useEffect(() => {
-        if (params.topicId) {
-            getNotes();
-            getTopicDetails();
-        }
-    }, [params.topicId]);
+
 
     const deleteNote = async (id: string) => {
         setButtonLoading(true);
@@ -188,6 +168,13 @@ export default function TopicPage() {
         return str.slice(0, num) + "...";
     };
 
+
+    useEffect(() => {
+        if (params.topicId && user.user?.id) {
+            getNotes();
+            getTopicDetails();
+        }
+    }, [user.user]);
     return (
         <div className="flex flex-col h-screen relative overflow-hidden">
             {isLoading && <Loader fullScreen={true} />}
