@@ -47,6 +47,7 @@ import { Label } from "../ui/label";
 import { Loader } from "@/components/loader";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import toast from "react-hot-toast";
 
 type Topic = {
     id: string;
@@ -120,6 +121,7 @@ export default function Sidebar() {
             setNewTopicName("");
             setIsAddTopicDialogOpen(false);
         } catch (error) {
+            toast.error("Error adding topic");
             console.error("Error adding topic:", error);
         } finally {
             setIsLoading(false);
@@ -144,7 +146,10 @@ export default function Sidebar() {
                         console.error("Failed to delete topic");
                     }
                 })
-                .catch((error) => console.error("Error deleting topic:", error))
+                .catch((error) => {
+                    toast.error("Error deleting topic");
+                    console.error("Error deleting topic:", error)
+                })
                 .finally(() => setButtonLoading(false));
         }
     };
@@ -171,7 +176,10 @@ export default function Sidebar() {
                     setTopicToRename(null);
                     setNewName("");
                 })
-                .catch((err) => console.error(err))
+                .catch((err) => {
+                    toast.error("Error renaming topic");
+                    console.error(err)
+                })
                 .finally(() => setButtonLoading(false));
         }
     };
@@ -198,6 +206,10 @@ export default function Sidebar() {
                     );
                 }
             })
+            .catch((err) => {
+                toast.error("Error toggling favorite");
+                console.error(err)
+            })
             .finally(() => setPageLoading(false));
     };
 
@@ -209,6 +221,7 @@ export default function Sidebar() {
             const data = await response.json();
             setUserTopics(data);
         } catch (error) {
+            toast.error("Error fetching topics");
             console.error("Error fetching topics:", error);
         } finally {
             setIsLoading(false);
@@ -222,6 +235,7 @@ export default function Sidebar() {
             const data = await response.json();
             setUncategorizedNotes(data.notes);
         } catch (error) {
+            toast.error("Error fetching uncategorized notes");
             console.error("Error fetching uncategorized notes:", error);
         } finally {
             setPageLoading(false);
@@ -237,6 +251,7 @@ export default function Sidebar() {
             const data = await response.json();
             setNotes(data?.notes);
         } catch (error) {
+            toast.error("Error fetching topic notes");
             console.error("Error fetching topic notes:", error);
         } finally {
             setPageLoading(false);
@@ -279,12 +294,12 @@ export default function Sidebar() {
                 console.error("Failed to delete note");
             }
         } catch (err) {
+            toast.error("Error deleting note");
             console.error("Error deleting note:", err);
         } finally {
             setButtonLoading(false);
         }
-        setNotes(notes.filter((note) => note.id !== id));
-        setNoteToDelete(null);
+
     };
 
     const renameNote = () => {
@@ -315,7 +330,11 @@ export default function Sidebar() {
                     setNoteToRename(null);
                     setNewNoteName("");
                 })
-                .catch((err) => console.error(err))
+                .catch((err) => {
+                    toast.error("Error renaming note");
+                    console.error(err)
+                }
+                )
                 .finally(() => setButtonLoading(false));
         }
     };
@@ -340,64 +359,15 @@ export default function Sidebar() {
                     setNoteToMove(null);
                     setnewNoteTopicIdId("");
                 })
-                .catch((err) => console.error(err))
-                .finally(() => setButtonLoading(false));
-        }
-    };
-
-    const createNote = () => {
-        if (newNoteTitle.trim() && newNoteDate && newNoteTime) {
-            setButtonLoading(true);
-            fetch("/api/note", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    title: newNoteTitle.trim(),
-                    date: newNoteDate,
-                    time: newNoteTime,
-                    participants: newNoteParticipants
-                        .split(",")
-                        .map((p) => p.trim())
-                        .filter((p) => p),
-                    topicId: userSelectedTopic.id,
-                    ownerId: user.user?.id,
-                }),
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    console.log(data);
-                    setNotes([...notes, data]);
-                    setIsCreateNoteDialogOpen(false);
-                    setNewNoteTitle("");
-                    setNewNoteDate("");
-                    setNewNoteTime("");
-                    setNewNoteParticipants("");
+                .catch((err) => {
+                    toast.error("Error moving note");
+                    console.error(err)
                 })
-                .catch((err) => console.error(err))
                 .finally(() => setButtonLoading(false));
         }
     };
 
-    const getDate = (date: Date) => {
-        return date.toISOString().slice(0, 10);
-    };
 
-    const getTime = (date: Date) => {
-        let hours = date.getHours();
-        const minutes = date.getMinutes();
-        const ampm = hours >= 12 ? "PM" : "AM";
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-        const minutesStr = minutes < 10 ? "0" + minutes : minutes;
-        return `${hours}:${minutesStr} ${ampm}`;
-    };
-
-    const truncateString = (str: string, length: number = 100) => {
-        if (str.length <= length) return str;
-        return `${str.substring(0, length)}...`;
-    };
 
     useEffect(() => {
         if (user?.user?.id) {

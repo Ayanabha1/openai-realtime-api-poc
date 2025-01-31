@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth, useUser } from "@clerk/nextjs";
+import toast from "react-hot-toast";
 
 type Note = {
     id: string;
@@ -61,6 +62,7 @@ export default function TopicPage() {
             const data = await response.json();
             setNotes(data?.notes);
         } catch (error) {
+            toast.error("Error fetching notes");
             console.error("Error fetching notes:", error);
         } finally {
             setIsLoading(false);
@@ -75,6 +77,7 @@ export default function TopicPage() {
             setTopic(data.topic);
             setNotes(data.topic.notes);
         } catch (error) {
+            toast.error("Error fetching topic details");
             console.error("Error fetching topic details:", error);
         }
     };
@@ -95,6 +98,7 @@ export default function TopicPage() {
                 setDeleteConfirmation("");
             }
         } catch (error) {
+            toast.error("Error deleting note");
             console.error("Error deleting note:", error);
         } finally {
             setButtonLoading(false);
@@ -120,6 +124,7 @@ export default function TopicPage() {
                 setNewNoteName("");
             }
         } catch (error) {
+            toast.error("Error renaming note");
             console.error("Error renaming note:", error);
         } finally {
             setButtonLoading(false);
@@ -142,6 +147,7 @@ export default function TopicPage() {
             }
         } catch (error) {
             console.error("Error moving note:", error);
+            toast.error("Error moving note");
         } finally {
             setButtonLoading(false);
         }

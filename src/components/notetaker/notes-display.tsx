@@ -18,6 +18,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { Loader } from "@/components/loader";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface DraggableItemProps {
   id: string;
@@ -175,6 +176,7 @@ export default function NotesDisplay({ noteId }: { noteId: string }) {
       const data = await response.json();
       console.log(data);
     } catch (error) {
+      toast.error("Error updating key points");
       console.error("Error updating key points:", error);
     } finally {
       setIsUpdatingKeyPoints(false);
@@ -208,6 +210,7 @@ export default function NotesDisplay({ noteId }: { noteId: string }) {
       setSuggestions(data?.suggestions);
       setDuration(data?.audio_duration);
     } catch (error) {
+      toast.error("Error fetching note details");
       console.error("Error fetching note details:", error);
     } finally {
       setIsLoadingNotes(false);
